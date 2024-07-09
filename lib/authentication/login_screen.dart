@@ -1,5 +1,5 @@
 import 'package:cccc/authentication/signup_screen.dart';
-// import 'package:cccc/methods/common_methods.dart';
+import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
 // // import 'package:cccc/widgets/loading_dialog.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
@@ -18,25 +18,28 @@ class _LoginScreenState extends State<LoginScreen> {
   TextEditingController usernameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
-  // CommonMethods cmethods = CommonMethods();
+  CommonMethods cmethods = CommonMethods();
 
-  // checkIfNetworkAvailable(){
-  //   cmethods.checkConnectivity(context);
+  checkIfNetworkAvailable() {
+    cmethods.checkConnectivity(context);
 
-  //   signInFormValidation();
-  // }
+    signInFormValidation();
+  }
 
-  // signInFormValidation(){
-  //   if(emailTextEditingController.text.trim().length < 4){
-  //     cmethods.displaySnackbar('Your Username must be atleast 4 characters', context);
-  //   }
-  //   else if(passwordTextEditingController.text.trim().length < 6){
-  //     cmethods.displaySnackbar('Your Password must be atleast 6 characters', context);
-  //   }
-  //   else{
-  //     signInForm();
-  //   }
-  // }
+  void signInFormValidation() {
+  String email = emailTextEditingController.text.trim();
+  String password = passwordTextEditingController.text.trim();
+
+  if (!email.contains('@')) {
+    cmethods.displaySnackbar('Please enter a valid email address', context);
+  } else if (password.length < 6) {
+    cmethods.displaySnackbar('Your Password must be at least 6 characters', context);
+  } else {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => Homepage()));
+    // Optionally, you might call a signInForm() method here if needed.
+  }
+}
+
 
   // signInForm() async{
   //   showDialog(
@@ -109,11 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        // checkIfNetworkAvailable();
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => Homepage()));
+                        checkIfNetworkAvailable();
                       },
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,

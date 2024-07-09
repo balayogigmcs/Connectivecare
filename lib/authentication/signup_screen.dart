@@ -1,5 +1,5 @@
 import 'package:cccc/authentication/login_screen.dart';
-// import 'package:cccc/methods/common_methods.dart';
+import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
 // import 'package:cccc/widgets/loading_dialog.dart';
 // import 'package:firebase_auth/firebase_auth.dart';
@@ -20,31 +20,33 @@ class _SignupScreenState extends State<SignupScreen> {
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
   TextEditingController phoneTextEditingController = TextEditingController();
-  // CommonMethods cmethods = CommonMethods();
+  CommonMethods cmethods = CommonMethods();
 
-  // checkIfNetworkAvailable() {
-  //   cmethods.checkConnectivity(context);
+  checkIfNetworkAvailable() {
+    cmethods.checkConnectivity(context);
 
-  //   signUpFormValidation();
-  // }
+    signUpFormValidation();
+    Navigator.push(
+        context, MaterialPageRoute(builder: (context) => Homepage()));
+  }
 
-  // signUpFormValidation(){
-  //   if(usernameTextEditingController.text.trim().length < 4){
-  //     cmethods.displaySnackbar('Your Username must be atleast 4 characters', context);
-  //   }
-  //   else if(phoneTextEditingController.text.trim().length <10){
-  //     cmethods.displaySnackbar('Your Phone number must be atleast 10 characters', context);
-  //   }
-  //   else if(!emailTextEditingController.text.contains('@')){
-  //     cmethods.displaySnackbar('Please enter email address', context);
-  //   }
-  //   else if(passwordTextEditingController.text.trim().length < 6){
-  //     cmethods.displaySnackbar('Your Password must be atleast 6 characters', context);
-  //   }
-  //   else{
-  //     registerNewUser();
-  //   }
-  // }
+  signUpFormValidation() {
+    String email = emailTextEditingController.text.trim();
+    if (usernameTextEditingController.text.trim().length < 4) {
+      cmethods.displaySnackbar(
+          'Your Username must be atleast 4 characters', context);
+    } else if (phoneTextEditingController.text.trim().length < 10) {
+      cmethods.displaySnackbar(
+          'Your Phone number must be atleast 10 characters', context);
+    } else if (!email.contains('@')) {
+      cmethods.displaySnackbar('Please enter email address', context);
+    } else if (passwordTextEditingController.text.trim().length < 6) {
+      cmethods.displaySnackbar(
+          'Your Password must be atleast 6 characters', context);
+    } else {
+      //registerNewUser();
+    }
+  }
 
   // registerNewUser() async {
   //   showDialog(
@@ -139,11 +141,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () {
-                        // checkIfNetworkAvailable();
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => Homepage()));
+                        checkIfNetworkAvailable();
                       },
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
