@@ -19,30 +19,30 @@ class Homepage extends StatefulWidget {
 class _HomepageState extends State<Homepage> {
   final Completer<GoogleMapController> googleMapCompleterController = Completer<GoogleMapController>();
   GoogleMapController? controllerGoogleMap;
-  // Position? currentPositionOfUser;
+  Position? currentPositionOfUser;
 
-  // void updateMapTheme(GoogleMapController controller) {
-  //   getJsonFileFromThemes('themes/dark_style.json').then((value) => setGoogleMapStyle(value, controller));
-  // }
+  void updateMapTheme(GoogleMapController controller) {
+    getJsonFileFromThemes('themes/dark_style.json').then((value) => setGoogleMapStyle(value, controller));
+  }
 
-  // Future<String> getJsonFileFromThemes(String path) async {
-  //   ByteData byteData = await rootBundle.load(path);
-  //   var list = byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
-  //   return utf8.decode(list);
-  // }
+  Future<String> getJsonFileFromThemes(String path) async {
+    ByteData byteData = await rootBundle.load(path);
+    var list = byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
+    return utf8.decode(list);
+  }
 
-  // void setGoogleMapStyle(String googleMapStyle, GoogleMapController controller) {
-  //   controller.setMapStyle(googleMapStyle);
-  // }
+  void setGoogleMapStyle(String googleMapStyle, GoogleMapController controller) {
+    controller.setMapStyle(googleMapStyle);
+  }
 
-  // getCurrentLiveLocationOfUser() async{
-  //   Position positionOfUser = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
-  //   currentPositionOfUser = positionOfUser;
+  getCurrentLiveLocationOfUser() async{
+    Position positionOfUser = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.bestForNavigation);
+    currentPositionOfUser = positionOfUser;
 
-  //   LatLng positionOfUserInLatLng = LatLng(currentPositionOfUser!.latitude,currentPositionOfUser!.longitude);
-  //   CameraPosition cameraPosition = CameraPosition(target: positionOfUserInLatLng,zoom: 15);
-  //   controllerGoogleMap!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-  // }
+    LatLng positionOfUserInLatLng = LatLng(currentPositionOfUser!.latitude,currentPositionOfUser!.longitude);
+    CameraPosition cameraPosition = CameraPosition(target: positionOfUserInLatLng,zoom: 15);
+    controllerGoogleMap!.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +55,7 @@ class _HomepageState extends State<Homepage> {
             initialCameraPosition: googlePlexInitialPositon,
             onMapCreated: (GoogleMapController mapController) {
               controllerGoogleMap = mapController;
-              // updateMapTheme(controllerGoogleMap!);
+              updateMapTheme(controllerGoogleMap!);
               googleMapCompleterController.complete(controllerGoogleMap);
             },
           ),
