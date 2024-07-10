@@ -1,13 +1,13 @@
-// import 'dart:async';
-// import 'dart:convert';
-// import 'dart:typed_data';
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
 
-// import 'package:cccc/global/global_var.dart';
+import 'package:cccc/global/global_var.dart';
 import 'package:flutter/material.dart';
-// import 'package:flutter/services.dart';
-// import 'package:geolocator/geolocator.dart';
-// import 'package:google_maps_flutter/google_maps_flutter.dart';
-// import 'package:geolocator_android/geolocator_android.dart';
+import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator_android/geolocator_android.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -17,8 +17,8 @@ class Homepage extends StatefulWidget {
 }
 
 class _HomepageState extends State<Homepage> {
-  // final Completer<GoogleMapController> googleMapCompleterController = Completer<GoogleMapController>();
-  // GoogleMapController? controllerGoogleMap;
+  final Completer<GoogleMapController> googleMapCompleterController = Completer<GoogleMapController>();
+  GoogleMapController? controllerGoogleMap;
   // Position? currentPositionOfUser;
 
   // void updateMapTheme(GoogleMapController controller) {
@@ -47,21 +47,20 @@ class _HomepageState extends State<Homepage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: Text('Home page')),
-      // body: Stack(
-      //   children: [
-      //     GoogleMap(
-      //       mapType: MapType.normal,
-      //       myLocationButtonEnabled: true,
-      //       initialCameraPosition: googlePlexInitialPositon,
-      //       onMapCreated: (GoogleMapController mapController) {
-      //         controllerGoogleMap = mapController;
-      //         updateMapTheme(controllerGoogleMap!);
-      //         googleMapCompleterController.complete(controllerGoogleMap);
-      //       },
-      //     ),
-      //   ],
-      // ),
+      body: Stack(
+        children: [
+          GoogleMap(
+            mapType: MapType.normal,
+            myLocationButtonEnabled: true,
+            initialCameraPosition: googlePlexInitialPositon,
+            onMapCreated: (GoogleMapController mapController) {
+              controllerGoogleMap = mapController;
+              // updateMapTheme(controllerGoogleMap!);
+              googleMapCompleterController.complete(controllerGoogleMap);
+            },
+          ),
+        ],
+      ),
     );
   }
 }

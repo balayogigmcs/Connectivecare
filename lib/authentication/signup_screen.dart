@@ -1,10 +1,10 @@
 import 'package:cccc/authentication/login_screen.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
-// import 'package:cccc/widgets/loading_dialog.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_database/firebase_database.dart';
+import 'package:cccc/widgets/loading_dialog.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -26,8 +26,6 @@ class _SignupScreenState extends State<SignupScreen> {
     cmethods.checkConnectivity(context);
 
     signUpFormValidation();
-    Navigator.push(
-        context, MaterialPageRoute(builder: (context) => Homepage()));
   }
 
   signUpFormValidation() {
@@ -44,42 +42,42 @@ class _SignupScreenState extends State<SignupScreen> {
       cmethods.displaySnackbar(
           'Your Password must be atleast 6 characters', context);
     } else {
-      //registerNewUser();
+      registerNewUser();
     }
   }
 
-  // registerNewUser() async {
-  //   showDialog(
-  //       context: context,
-  //       builder: (BuildContext context) =>
-  //           LoadingDialog(messageText: " Registering Account"));
+  registerNewUser() async {
+    showDialog(
+        context: context,
+        builder: (BuildContext context) =>
+            LoadingDialog(messageText: " Registering Account"));
 
-  //   final User? userFirebase = (await FirebaseAuth.instance
-  //           .createUserWithEmailAndPassword(
-  //               email: emailTextEditingController.text.trim(),
-  //               password: passwordTextEditingController.text.trim())
-  //           .catchError((errorMsg) {
-  //     Navigator.pop(context);
-  //     cmethods.displaySnackbar(errorMsg.toString(), context);
-  //   }))
-  //       .user;
-  //   if (!context.mounted) return;
-  //   Navigator.pop(context);
+    final User? userFirebase = (await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+                email: emailTextEditingController.text.trim(),
+                password: passwordTextEditingController.text.trim())
+            .catchError((errorMsg) {
+      Navigator.pop(context);
+      cmethods.displaySnackbar(errorMsg.toString(), context);
+    }))
+        .user;
+    if (!context.mounted) return;
+    Navigator.pop(context);
 
-  //   DatabaseReference usersRef =
-  //       FirebaseDatabase.instance.ref().child('users').child(userFirebase!.uid);
+    DatabaseReference usersRef =
+        FirebaseDatabase.instance.ref().child('users').child(userFirebase!.uid);
 
-  //   Map userDataMap = {
-  //     'name': usernameTextEditingController.text.trim(),
-  //     'email': emailTextEditingController.text.trim(),
-  //     'phone': phoneTextEditingController.text.trim(),
-  //     'uid': userFirebase.uid,
-  //     'blockStatus': "no"
-  //   };
-  //   usersRef.set(userDataMap);
-  //   Navigator.push(context,
-  //       MaterialPageRoute(builder: (BuildContext context) => Homepage()));
-  // }
+    Map userDataMap = {
+      'name': usernameTextEditingController.text.trim(),
+      'email': emailTextEditingController.text.trim(),
+      'phone': phoneTextEditingController.text.trim(),
+      'uid': userFirebase.uid,
+      'blockStatus': "no"
+    };
+    usersRef.set(userDataMap);
+    Navigator.push(context,
+        MaterialPageRoute(builder: (BuildContext context) => Homepage()));
+  }
 
   @override
   Widget build(BuildContext context) {

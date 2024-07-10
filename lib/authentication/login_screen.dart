@@ -1,10 +1,10 @@
 import 'package:cccc/authentication/signup_screen.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
-// // import 'package:cccc/widgets/loading_dialog.dart';
-// import 'package:firebase_auth/firebase_auth.dart';
-// //import 'package:firebase_core/firebase_core.dart';
-// import 'package:firebase_database/firebase_database.dart';
+import 'package:cccc/widgets/loading_dialog.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+//import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -27,50 +27,49 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void signInFormValidation() {
-  String email = emailTextEditingController.text.trim();
-  String password = passwordTextEditingController.text.trim();
+    String email = emailTextEditingController.text.trim();
+    String password = passwordTextEditingController.text.trim();
 
-  if (!email.contains('@')) {
-    cmethods.displaySnackbar('Please enter a valid email address', context);
-  } else if (password.length < 6) {
-    cmethods.displaySnackbar('Your Password must be at least 6 characters', context);
-  } else {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => Homepage()));
-    // Optionally, you might call a signInForm() method here if needed.
+    if (!email.contains('@')) {
+      cmethods.displaySnackbar('Please enter a valid email address', context);
+    } else if (password.length < 6) {
+      cmethods.displaySnackbar(
+          'Your Password must be at least 6 characters', context);
+    } else {
+      signInForm();
+    }
   }
-}
 
+  signInForm() async{
+    showDialog(
+        context: context,
+        builder: (BuildContext context) =>
+            LoadingDialog(messageText: " Allowing user to Login"));
 
-  // signInForm() async{
-  //   showDialog(
-  //       context: context,
-  //       builder: (BuildContext context) =>
-  //           LoadingDialog(messageText: " Allowing user to Login"));
+    final User? userFirebase = (await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+                email: emailTextEditingController.text.trim(),
+                password: passwordTextEditingController.text.trim())
+            .catchError((errorMsg) {
+      Navigator.pop(context);
+      cmethods.displaySnackbar(errorMsg.toString(), context);
+    }))
+        .user;
+    if (!context.mounted) return;
+    Navigator.pop(context);
 
-  //   final User? userFirebase = (await FirebaseAuth.instance
-  //           .signInWithEmailAndPassword(
-  //               email: emailTextEditingController.text.trim(),
-  //               password: passwordTextEditingController.text.trim())
-  //           .catchError((errorMsg) {
-  //     Navigator.pop(context);
-  //     cmethods.displaySnackbar(errorMsg.toString(), context);
-  //   }))
-  //       .user;
-  //   if (!context.mounted) return;
-  //   Navigator.pop(context);
-
-  //   if(userFirebase != null){
-  //     DatabaseReference usersRef = FirebaseDatabase.instance.ref().child('users').child(userFirebase.uid);
-  //     usersRef.once().then((snap){
-  //       if(snap.snapshot.value != null){
-  //         Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => Homepage()));
-  //       }
-  //       else{
-  //         cmethods.displaySnackbar('Account doesn\'t exist', context);
-  //       }
-  //     });
-  //   }
-  // }
+    if(userFirebase != null){
+      DatabaseReference usersRef = FirebaseDatabase.instance.ref().child('users').child(userFirebase.uid);
+      usersRef.once().then((snap){
+        if(snap.snapshot.value != null){
+          Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => Homepage()));
+        }
+        else{
+          cmethods.displaySnackbar('Account doesn\'t exist', context);
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
