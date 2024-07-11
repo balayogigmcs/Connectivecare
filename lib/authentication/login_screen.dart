@@ -78,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Your are Blocked, Contact Admin', context);
           }
         } else {
+          FirebaseAuth.instance.signOut();
           cmethods.displaySnackbar('Account doesn\'t exist', context);
         }
       });

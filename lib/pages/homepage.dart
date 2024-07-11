@@ -1,6 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:cccc/authentication/login_screen.dart';
+import 'package:cccc/methods/common_methods.dart';
+import 'package:cccc/pages/search_destination_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,6 +28,9 @@ class _HomepageState extends State<Homepage> {
   GoogleMapController? mapController;
   Position? currentPosition;
   GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+  CommonMethods cmethods = CommonMethods();
+  double searchHeightContainer = 276;
+  double bottomMapPadding = 0;
 
   @override
   void initState() {
@@ -37,8 +45,8 @@ class _HomepageState extends State<Homepage> {
 
   Future<String> getJsonFileFromThemes(String path) async {
     ByteData byteData = await rootBundle.load(path);
-    var list =
-        byteData.buffer.asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
+    var list = byteData.buffer
+        .asUint8List(byteData.offsetInBytes, byteData.lengthInBytes);
     return utf8.decode(list);
   }
 
@@ -62,6 +70,39 @@ class _HomepageState extends State<Homepage> {
         ),
       ));
     }
+    await CommonMethods.convertGeoGraphicCodingIntoHumanReadableAddress(currentPosition!,context);
+
+    getUserInfoAndCheckBlockStatus();
+  }
+
+  getUserInfoAndCheckBlockStatus() async {
+    DatabaseReference usersRef = FirebaseDatabase.instance
+        .ref()
+        .child('users')
+        .child(FirebaseAuth.instance.currentUser!.uid);
+
+    await usersRef.once().then((snap) {
+      if (snap.snapshot.value != null) {
+        if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
+          setState(() {
+            userName = (snap.snapshot.value as Map)["name"];
+          });
+        } else {
+          FirebaseAuth.instance.signOut();
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (BuildContext context) => LoginScreen()));
+          cmethods.displaySnackbar('You are Blocked, Contact Admin', context);
+        }
+      } else {
+        FirebaseAuth.instance.signOut();
+        Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (BuildContext context) => LoginScreen()));
+      }
+    });
   }
 
   @override
@@ -109,15 +150,21 @@ class _HomepageState extends State<Homepage> {
                   // Navigate to about screen or implement action
                 },
               ),
-              ListTile(
-                leading: Icon(Icons.logout, color: Colors.white),
-                title: Text(
-                  'Logout',
-                  style: TextStyle(color: Colors.white),
-                ),
+              GestureDetector(
                 onTap: () {
-                  // Implement logout functionality here
+                  FirebaseAuth.instance.signOut();
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (BuildContext context) => LoginScreen()));
                 },
+                child: ListTile(
+                  leading: Icon(Icons.logout, color: Colors.white),
+                  title: Text(
+                    'Logout',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
               ),
             ],
           ),
@@ -126,6 +173,7 @@ class _HomepageState extends State<Homepage> {
       body: Stack(
         children: [
           GoogleMap(
+            padding: EdgeInsets.only(top: 26, bottom: bottomMapPadding),
             mapType: MapType.normal,
             myLocationButtonEnabled: true,
             myLocationEnabled: true,
@@ -140,6 +188,10 @@ class _HomepageState extends State<Homepage> {
               mapController = controller;
               updateMapTheme(mapController!);
               googleMapControllerCompleter.complete(mapController);
+
+              setState(() {
+                bottomMapPadding = 300;
+              });
             },
           ),
           Positioned(
@@ -170,6 +222,57 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
           ),
+          Positioned(
+              left: 0,
+              right: 0,
+              bottom: -80,
+              child: Container(
+                height: searchHeightContainer,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    ElevatedButton(
+                        onPressed: () {
+                          Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (BuildContext context) =>
+                                      SearchDestinationPage()));
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: CircleBorder(),
+                            padding: const EdgeInsets.all(24)),
+                        child: const Icon(
+                          Icons.search,
+                          color: Colors.white,
+                          size: 25,
+                        )),
+                    ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: CircleBorder(),
+                            padding: const EdgeInsets.all(24)),
+                        child: const Icon(
+                          Icons.home,
+                          color: Colors.white,
+                          size: 25,
+                        )),
+                    ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.grey,
+                            shape: CircleBorder(),
+                            padding: const EdgeInsets.all(24)),
+                        child: const Icon(
+                          Icons.work,
+                          color: Colors.white,
+                          size: 25,
+                        ))
+                  ],
+                ),
+              ))
         ],
       ),
     );
