@@ -93,7 +93,7 @@ class _HomepageState extends State<Homepage> {
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
-                      textAlign: TextAlign.start,
+                      textAlign: TextAlign.center,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],

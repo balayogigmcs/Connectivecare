@@ -41,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  signInForm() async{
+  signInForm() async {
     showDialog(
         context: context,
         builder: (BuildContext context) =>
@@ -59,14 +59,25 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!context.mounted) return;
     Navigator.pop(context);
 
-    if(userFirebase != null){
-      DatabaseReference usersRef = FirebaseDatabase.instance.ref().child('users').child(userFirebase.uid);
-      usersRef.once().then((snap){
-        if(snap.snapshot.value != null){
-          userName = (snap.snapshot.value as Map)["name"];
-          Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => Homepage()));
-        }
-        else{
+    if (userFirebase != null) {
+      DatabaseReference usersRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(userFirebase.uid);
+      usersRef.once().then((snap) {
+        if (snap.snapshot.value != null) {
+          if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
+            userName = (snap.snapshot.value as Map)["name"];
+            Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (BuildContext context) => Homepage()));
+          } else {
+            FirebaseAuth.instance.signOut();
+            cmethods.displaySnackbar(
+                'Your are Blocked, Contact Admin', context);
+          }
+        } else {
           cmethods.displaySnackbar('Account doesn\'t exist', context);
         }
       });

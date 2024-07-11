@@ -1,4 +1,6 @@
 import 'package:cccc/authentication/login_screen.dart';
+import 'package:cccc/pages/homepage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 //import 'package:cc/authentication/signup_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
@@ -28,7 +30,7 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(scaffoldBackgroundColor: Colors.black),
-      home: const LoginScreen(),
+      home: FirebaseAuth.instance.currentUser == null? LoginScreen() : Homepage(),
     );
   }
 }
