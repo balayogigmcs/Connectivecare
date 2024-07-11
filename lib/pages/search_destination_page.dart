@@ -1,4 +1,8 @@
 import 'package:cccc/appinfo/appinfo.dart';
+import 'package:cccc/global/global_var.dart';
+import 'package:cccc/methods/common_methods.dart';
+import 'package:cccc/models/prediction_model.dart';
+import 'package:cccc/widgets/prediction_place_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -14,10 +18,39 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
   TextEditingController destinationTextEditingController =
       TextEditingController();
 
+  List<PredictionModel> dropOffPredictionPlacesList = [];
+
+//place API - auto complete
+  searchLocation(String locationName) async {
+    if (locationName.length > 1) {
+      String apiPlaceUrl =
+          "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$locationName&key=$googleMapKey&components=country:us";
+
+      var responsesFromPlacesApi =
+          await CommonMethods.sendRequestToAPI(apiPlaceUrl);
+
+      if (responsesFromPlacesApi == "error") {
+        return;
+      }
+      if (responsesFromPlacesApi["status"] == "OK") {
+        var predictionResultInJson = responsesFromPlacesApi["predictions"];
+        var predictionList = (predictionResultInJson as List)
+            .map((eachPlacePrediction) =>
+                PredictionModel.fromJson(eachPlacePrediction))
+            .toList();
+
+        setState(() {
+          dropOffPredictionPlacesList = predictionList;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
- 
-    String userAddress = Provider.of<Appinfo>(context).pickUpLocation!.humanReadableAddress ?? "";
+    String userAddress =
+        Provider.of<Appinfo>(context).pickUpLocation!.humanReadableAddress ??
+            "";
     pickUpTextEditingController.text = userAddress;
 
     return Scaffold(
@@ -98,10 +131,12 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                           ))
                         ],
                       ),
-                      const SizedBox(height: 11,),
+                      const SizedBox(
+                        height: 11,
+                      ),
 
                       // Destination
-                       Row(
+                      Row(
                         children: [
                           Image.asset(
                             "assets/images/final.png",
@@ -120,8 +155,11 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                               padding: const EdgeInsets.all(3),
                               child: TextField(
                                 controller: destinationTextEditingController,
+                                onChanged: (inputText) {
+                                  searchLocation(inputText);
+                                },
                                 decoration: const InputDecoration(
-                                    hintText: "Pickup Address",
+                                    hintText: "DropOff Address",
                                     fillColor: Colors.white12,
                                     filled: true,
                                     border: InputBorder.none,
@@ -137,7 +175,29 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                   ),
                 ),
               ),
-            )
+            ),
+            (dropOffPredictionPlacesList.length > 0)
+                ? Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                    child: ListView.separated(
+                      itemBuilder: (context, index) {
+                        return Card(
+                            elevation: 3,
+                            child: PredictionPlaceUi(
+                              predictedPlaceData:
+                                  dropOffPredictionPlacesList[index],
+                            ));
+                      },
+                      separatorBuilder: (BuildContext context, index) =>
+                          const SizedBox(
+                        height: 2,
+                      ),
+                      itemCount: dropOffPredictionPlacesList.length,
+                      shrinkWrap: true,
+                      physics: ClampingScrollPhysics(),
+                    ),
+                  )
+                : Container(),
           ],
         ),
       ),
