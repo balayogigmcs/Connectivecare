@@ -1,4 +1,5 @@
 import 'package:cccc/authentication/signup_screen.dart';
+import 'package:cccc/global/global_var.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
@@ -62,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
       DatabaseReference usersRef = FirebaseDatabase.instance.ref().child('users').child(userFirebase.uid);
       usersRef.once().then((snap){
         if(snap.snapshot.value != null){
+          userName = (snap.snapshot.value as Map)["name"];
           Navigator.push(context, MaterialPageRoute(builder: (BuildContext context) => Homepage()));
         }
         else{
