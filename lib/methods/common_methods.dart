@@ -1,10 +1,13 @@
 import 'dart:convert';
 
+import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/global/global_var.dart';
+import 'package:cccc/models/address_model.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 class CommonMethods {
   checkConnectivity(BuildContext context) async {
@@ -50,7 +53,14 @@ class CommonMethods {
 
     if (responseFromAPI != "error") {
       humanReadableAddress = responseFromAPI["results"][0]["formatted_address"];
-      print("humanReadableAddress = " + humanReadableAddress);
+      
+      AddressModel model = AddressModel();
+      model.humanReadableAddress = humanReadableAddress;
+      model.latitudePositon = position.latitude;
+      model.longitudePosition  = position.longitude;
+
+      Provider.of<Appinfo>(context,listen: false).updatePickUpLocation(model);
+
     }
     return humanReadableAddress;
   }

@@ -1,4 +1,6 @@
+import 'package:cccc/appinfo/appinfo.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class SearchDestinationPage extends StatefulWidget {
   const SearchDestinationPage({super.key});
@@ -14,6 +16,10 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
 
   @override
   Widget build(BuildContext context) {
+ 
+    String userAddress = Provider.of<Appinfo>(context).pickUpLocation!.humanReadableAddress ?? "";
+    pickUpTextEditingController.text = userAddress;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Column(
