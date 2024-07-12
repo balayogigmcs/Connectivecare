@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:cccc/global/global_var.dart';
 
 class PredictionPlaceUi extends StatefulWidget {
-  PredictionModel? predictedPlaceData;
+  final PredictionModel? predictedPlaceData;
 
   PredictionPlaceUi({super.key, this.predictedPlaceData});
 
@@ -32,6 +32,7 @@ class _PredictionPlaceUiState extends State<PredictionPlaceUi> {
         await CommonMethods.sendRequestToAPI(urlPlaceDetailsApi);
 
     Navigator.pop(context);
+
     if (responceFromPlaceDetailsApi == "error") {
       return;
     }

@@ -6,8 +6,10 @@ import 'package:cccc/models/address_model.dart';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
+import 'package:cccc/models/direction_details.dart';
 
 class CommonMethods {
   checkConnectivity(BuildContext context) async {
@@ -53,15 +55,42 @@ class CommonMethods {
 
     if (responseFromAPI != "error") {
       humanReadableAddress = responseFromAPI["results"][0]["formatted_address"];
-      
+
       AddressModel model = AddressModel();
       model.humanReadableAddress = humanReadableAddress;
       model.latitudePositon = position.latitude;
-      model.longitudePosition  = position.longitude;
+      model.longitudePosition = position.longitude;
 
-      Provider.of<Appinfo>(context,listen: false).updatePickUpLocation(model);
-
+      Provider.of<Appinfo>(context, listen: false).updatePickUpLocation(model);
     }
     return humanReadableAddress;
+  }
+
+  // DIRECTION API
+  static Future<DirectionDetails?> getDirectionDetailsFromAPI(
+      LatLng source, LatLng destination) async {
+    String urlDirectionsAPI =
+        "https://maps.googleapis.com/maps/api/directions/json?destination=${destination.latitude},${destination.longitude}&origin=${source.latitude},${source.longitude}&mode=driving&key=$googleMapKey";
+
+    var responceFromDirectionsAPI = await sendRequestToAPI(urlDirectionsAPI);
+
+    if (responceFromDirectionsAPI == "error") {
+      return null;
+    }
+
+    DirectionDetails detailsModel = DirectionDetails();
+    detailsModel.distanceTextString =
+        responceFromDirectionsAPI["routes"][0]["legs"][0]["distance"]["text"];
+    detailsModel.distanceValueDigits =
+        responceFromDirectionsAPI["routes"][0]["legs"][0]["distance"]["value"];
+    detailsModel.durationTextString =
+        responceFromDirectionsAPI["routes"][0]["legs"][0]["duration"]["text"];
+    detailsModel.durationValueDigits =
+        responceFromDirectionsAPI["routes"][0]["legs"][0]["duration"]["value"];
+
+    detailsModel.encodePoints =
+        responceFromDirectionsAPI["routes"][0]["overview_polyline"]["points"];
+
+    return detailsModel;
   }
 }

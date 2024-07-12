@@ -13,7 +13,7 @@ class Appinfo extends ChangeNotifier{
   }
 
   void updateDropOffLocation(AddressModel dropOffModel){
-    pickUpLocation = dropOffModel;
+    dropOffLocation = dropOffModel;
     notifyListeners();
   }
 

@@ -1,9 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/authentication/login_screen.dart';
 import 'package:cccc/methods/common_methods.dart';
+import 'package:cccc/models/direction_details.dart';
 import 'package:cccc/pages/search_destination_page.dart';
+import 'package:cccc/widgets/loading_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -13,7 +16,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // Ensure to import your global variables or variables used in the code
-import 'package:cccc/global/global_var.dart'; // Replace with actual import path
+import 'package:cccc/global/global_var.dart';
+import 'package:provider/provider.dart'; // Replace with actual import path
 
 class Homepage extends StatefulWidget {
   const Homepage({Key? key}) : super(key: key);
@@ -31,7 +35,8 @@ class _HomepageState extends State<Homepage> {
   CommonMethods cmethods = CommonMethods();
   double searchHeightContainer = 276;
   double bottomMapPadding = 0;
-  double rideDetailContainerHeight = 0;
+  double rideDetailsContainerHeight = 0;
+  DirectionDetails? tripDirectionDetailsInfo;
 
   @override
   void initState() {
@@ -107,16 +112,60 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
-  displayUserRideDetailContainer() {
+  /// DIRECTION API
+  displayUserRideDetailContainer() async {
+    await retriveDirectionDetails();
+
     setState(() {
       searchHeightContainer = 0;
       bottomMapPadding = 240;
-      rideDetailContainerHeight = 242;
+      rideDetailsContainerHeight = 242;
+    });
+  }
+
+  retriveDirectionDetails() async {
+    var pickUpLocation =
+        Provider.of<Appinfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation =
+        Provider.of<Appinfo>(context, listen: false).dropOffLocation;
+
+        if (pickUpLocation == null || dropOffDestinationLocation == null) {
+    // Handle case where locations are not selected
+    print("hiiiiiiiiiiiiiiiiiiiiiiiiiiii");
+    return;
+  }
+
+    var pickUpGeographicCoordinates = LatLng(
+        pickUpLocation.latitudePositon!, pickUpLocation.longitudePosition!);
+    var dropOffDestinationGeographicCoordinates = LatLng(
+        dropOffDestinationLocation.latitudePositon!,
+        dropOffDestinationLocation.longitudePosition!);
+
+    showDialog(
+        barrierDismissible: false,
+        context: context,
+        builder: (BuildContext context) =>
+            LoadingDialog(messageText: "Getting Directions ..."));
+
+// DIRECTION API
+    var detailsFromDirectionsAPI =
+        await CommonMethods.getDirectionDetailsFromAPI(
+            pickUpGeographicCoordinates,
+            dropOffDestinationGeographicCoordinates);
+
+    setState(() {
+      tripDirectionDetailsInfo = detailsFromDirectionsAPI;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Check if tripDirectionDetailsInfo is null or not before accessing its properties
+    String distanceText =
+        tripDirectionDetailsInfo?.distanceTextString ?? '0 km';
+    String durationText =
+        tripDirectionDetailsInfo?.durationTextString ?? '0 min';
+
     return Scaffold(
       key: scaffoldKey,
       drawer: Drawer(
@@ -300,23 +349,26 @@ class _HomepageState extends State<Homepage> {
               right: 0,
               bottom: 0,
               child: Container(
-                height: rideDetailContainerHeight,
+                height: rideDetailsContainerHeight,
                 decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black45,
-                        blurRadius: 5,
-                        spreadRadius: 0.5,
-                        offset: Offset(0.7, 0.7),
-                      ),
-                    ]),
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(15),
+                    topRight: Radius.circular(15),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black45,
+                      blurRadius: 5,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7, 0.7),
+                    ),
+                  ],
+                ),
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 18),
                   child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Padding(
                         padding: EdgeInsets.only(left: 16, right: 16),
@@ -332,27 +384,35 @@ class _HomepageState extends State<Homepage> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      '2 km',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white70),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          distanceText,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                        Text(
+                                          durationText,
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                     GestureDetector(
-                                      onTap: () {},
-                                      child: Image.asset(
+                                        onTap: () {},
+                                        child: Image.asset(
                                           "assets/images/uberexec.png",
                                           height: 122,
-                                          width: 122),
-                                    ),
-                                    Text(
-                                      '\$12',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white70),
-                                    ),
+                                          width: 122,
+                                        )),
                                   ],
                                 ),
                               ),
