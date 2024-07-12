@@ -12,6 +12,7 @@ import 'package:firebase_database/firebase_database.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -37,6 +38,10 @@ class _HomepageState extends State<Homepage> {
   double bottomMapPadding = 0;
   double rideDetailsContainerHeight = 0;
   DirectionDetails? tripDirectionDetailsInfo;
+  List<LatLng> polylineCoordinates = [];
+  Set<Polyline> polylineSet = {};
+  Set<Marker> markerSet = {};
+  Set<Circle> circleSet = {};
 
   @override
   void initState() {
@@ -129,16 +134,10 @@ class _HomepageState extends State<Homepage> {
     var dropOffDestinationLocation =
         Provider.of<Appinfo>(context, listen: false).dropOffLocation;
 
-        if (pickUpLocation == null || dropOffDestinationLocation == null) {
-    // Handle case where locations are not selected
-    print("hiiiiiiiiiiiiiiiiiiiiiiiiiiii");
-    return;
-  }
-
     var pickUpGeographicCoordinates = LatLng(
-        pickUpLocation.latitudePositon!, pickUpLocation.longitudePosition!);
+        pickUpLocation!.latitudePositon!, pickUpLocation.longitudePosition!);
     var dropOffDestinationGeographicCoordinates = LatLng(
-        dropOffDestinationLocation.latitudePositon!,
+        dropOffDestinationLocation!.latitudePositon!,
         dropOffDestinationLocation.longitudePosition!);
 
     showDialog(
@@ -156,16 +155,112 @@ class _HomepageState extends State<Homepage> {
     setState(() {
       tripDirectionDetailsInfo = detailsFromDirectionsAPI;
     });
+
+    Navigator.pop(context);
+
+//DRAW DIRECTION
+
+    PolylinePoints pointsPolyline = PolylinePoints();
+    List<PointLatLng> latLngPointsFromPickupToDestination =
+        pointsPolyline.decodePolyline(tripDirectionDetailsInfo!.encodePoints!);
+
+    polylineCoordinates.clear();
+    latLngPointsFromPickupToDestination.forEach((PointLatLng latLngPoint) {
+      polylineCoordinates
+          .add(LatLng(latLngPoint.latitude, latLngPoint.longitude));
+    });
+
+    polylineSet.clear();
+    setState(() {
+      Polyline polyline = Polyline(
+          polylineId: const PolylineId("polylineID"),
+          color: Colors.pink,
+          points: polylineCoordinates,
+          jointType: JointType.round,
+          width: 4,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+          geodesic: true);
+
+      polylineSet.add(polyline);
+    });
+
+    LatLngBounds boundsLatLng;
+    if (pickUpGeographicCoordinates.latitude >
+            dropOffDestinationGeographicCoordinates.latitude &&
+        pickUpGeographicCoordinates.longitude >
+            dropOffDestinationGeographicCoordinates.longitude) {
+      boundsLatLng = LatLngBounds(
+          southwest: dropOffDestinationGeographicCoordinates,
+          northeast: pickUpGeographicCoordinates);
+    } else if (pickUpGeographicCoordinates.longitude >
+        dropOffDestinationGeographicCoordinates.longitude) {
+      boundsLatLng = LatLngBounds(
+          southwest: LatLng(pickUpGeographicCoordinates.latitude,
+              dropOffDestinationGeographicCoordinates.longitude),
+          northeast: LatLng(dropOffDestinationGeographicCoordinates.latitude,
+              pickUpGeographicCoordinates.longitude));
+    } else if (pickUpGeographicCoordinates.latitude >
+        dropOffDestinationGeographicCoordinates.longitude) {
+      boundsLatLng = LatLngBounds(
+          southwest: LatLng(dropOffDestinationGeographicCoordinates.latitude,
+              pickUpGeographicCoordinates.longitude),
+          northeast: LatLng(pickUpGeographicCoordinates.latitude,
+              dropOffDestinationGeographicCoordinates.longitude));
+    } else {
+      boundsLatLng = LatLngBounds(
+          southwest: pickUpGeographicCoordinates,
+          northeast: dropOffDestinationGeographicCoordinates);
+    }
+
+    mapController!
+        .animateCamera(CameraUpdate.newLatLngBounds(boundsLatLng, 72));
+
+    Marker pickUpPointMarker = Marker(
+      markerId: const MarkerId("pickUpPointMarkerID"),
+      position: pickUpGeographicCoordinates,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+      infoWindow:
+          InfoWindow(title: pickUpLocation.placeName, snippet: "Location"),
+    );
+
+    Marker dropOffDestinationPointMarker = Marker(
+      markerId: const MarkerId("dropOffDestinationPointMarkerID"),
+      position: dropOffDestinationGeographicCoordinates,
+      icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueYellow),
+      infoWindow: InfoWindow(
+          title: dropOffDestinationLocation.placeName, snippet: "Location"),
+    );
+
+    setState(() {
+      markerSet.add(pickUpPointMarker);
+      markerSet.add(dropOffDestinationPointMarker);
+    });
+
+    Circle pickUpPointCircle = Circle(
+        circleId: const CircleId("pickUpPointCircleID"),
+        strokeColor: Colors.blue,
+        strokeWidth: 4,
+        radius: 14,
+        center: pickUpGeographicCoordinates,
+        fillColor: Colors.pink);
+
+    Circle dropOffDestinationPointCircle = Circle(
+        circleId: const CircleId("dropOffDestinationPointCircleID"),
+        strokeColor: Colors.blue,
+        strokeWidth: 4,
+        radius: 14,
+        center: dropOffDestinationGeographicCoordinates,
+        fillColor: Colors.pink);
+
+    setState(() {
+      circleSet.add(pickUpPointCircle);
+      circleSet.add(dropOffDestinationPointCircle);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    // Check if tripDirectionDetailsInfo is null or not before accessing its properties
-    String distanceText =
-        tripDirectionDetailsInfo?.distanceTextString ?? '0 km';
-    String durationText =
-        tripDirectionDetailsInfo?.durationTextString ?? '0 min';
-
     return Scaffold(
       key: scaffoldKey,
       drawer: Drawer(
@@ -237,6 +332,9 @@ class _HomepageState extends State<Homepage> {
             mapType: MapType.normal,
             myLocationButtonEnabled: true,
             myLocationEnabled: true,
+            polylines: polylineSet,
+            markers: markerSet,
+            circles: circleSet,
             initialCameraPosition: CameraPosition(
               target: LatLng(
                 currentPosition?.latitude ?? 37.7749,
@@ -351,20 +449,18 @@ class _HomepageState extends State<Homepage> {
               child: Container(
                 height: rideDetailsContainerHeight,
                 decoration: BoxDecoration(
-                  color: Colors.black54,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(15),
-                    topRight: Radius.circular(15),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black45,
-                      blurRadius: 5,
-                      spreadRadius: 0.5,
-                      offset: Offset(0.7, 0.7),
-                    ),
-                  ],
-                ),
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(15),
+                        topRight: Radius.circular(15)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black45,
+                        blurRadius: 5,
+                        spreadRadius: 0.5,
+                        offset: Offset(0.7, 0.7),
+                      ),
+                    ]),
                 child: Padding(
                   padding: EdgeInsets.symmetric(vertical: 18),
                   child: Column(
@@ -389,30 +485,44 @@ class _HomepageState extends State<Homepage> {
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          distanceText,
+                                          // '2 km',
+                                          (tripDirectionDetailsInfo != null)
+                                              ? tripDirectionDetailsInfo!
+                                                  .distanceTextString!
+                                              : '0 km',
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white70,
-                                          ),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white70),
                                         ),
                                         Text(
-                                          durationText,
+                                          (tripDirectionDetailsInfo != null)
+                                              ? tripDirectionDetailsInfo!
+                                                  .durationTextString!
+                                              : '0 \$',
                                           style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white70,
-                                          ),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.white70),
                                         ),
                                       ],
                                     ),
                                     GestureDetector(
-                                        onTap: () {},
-                                        child: Image.asset(
+                                      onTap: () {},
+                                      child: Image.asset(
                                           "assets/images/uberexec.png",
                                           height: 122,
-                                          width: 122,
-                                        )),
+                                          width: 122),
+                                    ),
+                                    Text(
+                                      (tripDirectionDetailsInfo != null)
+                                          ? " \$ ${(cmethods.calculateFareAmount(tripDirectionDetailsInfo!))}"
+                                          : '',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white70),
+                                    ),
                                   ],
                                 ),
                               ),
