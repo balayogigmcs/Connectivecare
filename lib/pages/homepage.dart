@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/authentication/login_screen.dart';
+import 'package:cccc/global/trip_var.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/models/direction_details.dart';
 import 'package:cccc/pages/search_destination_page.dart';
@@ -18,6 +19,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 // Ensure to import your global variables or variables used in the code
 import 'package:cccc/global/global_var.dart';
+import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart'; // Replace with actual import path
 
 class Homepage extends StatefulWidget {
@@ -42,6 +44,10 @@ class _HomepageState extends State<Homepage> {
   Set<Polyline> polylineSet = {};
   Set<Marker> markerSet = {};
   Set<Circle> circleSet = {};
+  bool isDrawerOpened = true;
+  double requestContainerHeight = 0;
+  double tripContainerHeight = 0;
+  String stateOfApp = "normal";
 
   @override
   void initState() {
@@ -125,6 +131,7 @@ class _HomepageState extends State<Homepage> {
       searchHeightContainer = 0;
       bottomMapPadding = 240;
       rideDetailsContainerHeight = 242;
+      isDrawerOpened = false;
     });
   }
 
@@ -259,10 +266,50 @@ class _HomepageState extends State<Homepage> {
     });
   }
 
+  resetAppNow() {
+    setState(() {
+      polylineCoordinates.clear();
+      polylineSet.cast();
+      markerSet.clear();
+      circleSet.clear();
+      rideDetailsContainerHeight = 0;
+      requestContainerHeight = 0;
+      tripContainerHeight = 0;
+      searchHeightContainer = 276;
+      bottomMapPadding = 300;
+      isDrawerOpened = true;
+
+      nameDriver = "";
+      photoDriver = "";
+      phoneNumberDriver = "";
+      status = "";
+      carDetialsDriver = "";
+      tripStatusDisplay = "Driver is Arriving";
+    });
+  }
+
+  displayRequestContainer() {
+    setState(() {
+      rideDetailsContainerHeight = 0;
+      requestContainerHeight = 220;
+      bottomMapPadding = 220;
+      isDrawerOpened = true;
+    });
+  }
+
+  cancelRideRequest(){
+    // REMOVE RIDE REQUEST FROM DATABASE
+    setState(() {
+      stateOfApp  = "normal";
+    });
+    
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
+      // DRAWER
       drawer: Drawer(
         child: Container(
           color: Colors.black87,
@@ -324,9 +371,10 @@ class _HomepageState extends State<Homepage> {
           ),
         ),
       ),
+
       body: Stack(
         children: [
-          /// google map
+          ///  // GOOGLE MAP
           GoogleMap(
             padding: EdgeInsets.only(top: 26, bottom: bottomMapPadding),
             mapType: MapType.normal,
@@ -359,7 +407,11 @@ class _HomepageState extends State<Homepage> {
             left: 19,
             child: GestureDetector(
               onTap: () {
-                scaffoldKey.currentState!.openDrawer();
+                if (isDrawerOpened == true) {
+                  scaffoldKey.currentState!.openDrawer();
+                } else {
+                  resetAppNow();
+                }
               },
               child: Container(
                 decoration: BoxDecoration(
@@ -377,7 +429,8 @@ class _HomepageState extends State<Homepage> {
                 child: CircleAvatar(
                   backgroundColor: Colors.grey,
                   radius: 20,
-                  child: Icon(Icons.menu, color: Colors.black87),
+                  child: Icon(isDrawerOpened == true ? Icons.menu : Icons.close,
+                      color: Colors.black87),
                 ),
               ),
             ),
@@ -443,97 +496,171 @@ class _HomepageState extends State<Homepage> {
 
           //ride details container
           Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                height: rideDetailsContainerHeight,
-                decoration: BoxDecoration(
-                    color: Colors.black54,
-                    borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(15),
-                        topRight: Radius.circular(15)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black45,
-                        blurRadius: 5,
-                        spreadRadius: 0.5,
-                        offset: Offset(0.7, 0.7),
-                      ),
-                    ]),
-                child: Padding(
-                  padding: EdgeInsets.symmetric(vertical: 18),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(left: 16, right: 16),
-                        child: SizedBox(
-                          height: 190,
-                          child: Card(
-                            elevation: 10,
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * .70,
-                              color: Colors.black45,
-                              child: Padding(
-                                padding: EdgeInsets.only(top: 8, bottom: 8),
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          // '2 km',
-                                          (tripDirectionDetailsInfo != null)
-                                              ? tripDirectionDetailsInfo!
-                                                  .distanceTextString!
-                                              : '0 km',
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white70),
-                                        ),
-                                        Text(
-                                          (tripDirectionDetailsInfo != null)
-                                              ? tripDirectionDetailsInfo!
-                                                  .durationTextString!
-                                              : '0 \$',
-                                          style: TextStyle(
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.white70),
-                                        ),
-                                      ],
-                                    ),
-                                    GestureDetector(
-                                      onTap: () {},
-                                      child: Image.asset(
-                                          "assets/images/uberexec.png",
-                                          height: 122,
-                                          width: 122),
-                                    ),
-                                    Text(
-                                      (tripDirectionDetailsInfo != null)
-                                          ? " \$ ${(cmethods.calculateFareAmount(tripDirectionDetailsInfo!))}"
-                                          : '',
-                                      style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white70),
-                                    ),
-                                  ],
-                                ),
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: rideDetailsContainerHeight,
+              decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      topRight: Radius.circular(15)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black45,
+                      blurRadius: 5,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7, 0.7),
+                    ),
+                  ]),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 18),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(left: 16, right: 16),
+                      child: SizedBox(
+                        height: 190,
+                        child: Card(
+                          elevation: 10,
+                          child: Container(
+                            width: MediaQuery.of(context).size.width * .70,
+                            color: Colors.black45,
+                            child: Padding(
+                              padding: EdgeInsets.only(top: 8, bottom: 8),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        // '2 km',
+                                        (tripDirectionDetailsInfo != null)
+                                            ? tripDirectionDetailsInfo!
+                                                .distanceTextString!
+                                            : '0 km',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70),
+                                      ),
+                                      Text(
+                                        (tripDirectionDetailsInfo != null)
+                                            ? tripDirectionDetailsInfo!
+                                                .durationTextString!
+                                            : '0 \$',
+                                        style: TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white70),
+                                      ),
+                                    ],
+                                  ),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        stateOfApp = "requesting";
+                                      });
+
+                                      displayRequestContainer();
+
+                                      //get nearest available drivers
+
+                                      //search driver
+                                    },
+                                    child: Image.asset(
+                                        "assets/images/uberexec.png",
+                                        height: 122,
+                                        width: 122),
+                                  ),
+                                  Text(
+                                    (tripDirectionDetailsInfo != null)
+                                        ? " \$ ${(cmethods.calculateFareAmount(tripDirectionDetailsInfo!))}"
+                                        : '',
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white70),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
                         ),
-                      )
-                    ],
-                  ),
+                      ),
+                    )
+                  ],
                 ),
-              )),
+              ),
+            ),
+          ),
+
+          // ride request container
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: requestContainerHeight,
+              // color: Colors.black54,
+              decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(15),
+                      topRight: Radius.circular(15)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black45,
+                      blurRadius: 5,
+                      spreadRadius: 0.5,
+                      offset: Offset(0.7, 0.7),
+                    ),
+                  ]),
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 12,
+                    ),
+                    SizedBox(
+                        width: 200,
+                        child: LoadingAnimationWidget.flickr(
+                            leftDotColor: Colors.greenAccent,
+                            rightDotColor: Colors.pinkAccent,
+                            size: 50)),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        resetAppNow();
+                        cancelRideRequest();
+                      },
+                      child: Container(
+                        height: 50,
+                        width: 50,
+                        decoration: BoxDecoration(
+                            color: Colors.white70,
+                            borderRadius: BorderRadius.circular(25),
+                            border: Border.all(width: 1.5, color: Colors.grey)),
+                        child: Icon(
+                          Icons.close,
+                          color: Colors.black,
+                          size: 25,
+                        ),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+            ),
+          )
         ],
       ),
     );
