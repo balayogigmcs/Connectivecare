@@ -73,6 +73,7 @@ flutter:
   assets:
     - assets/images/logo.png
     - assets/images/initial.png
+    - assets/images/uberexec.png
     - assets/images/final.png
     - themes/
   # assets:

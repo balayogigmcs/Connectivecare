@@ -31,6 +31,7 @@ class _HomepageState extends State<Homepage> {
   CommonMethods cmethods = CommonMethods();
   double searchHeightContainer = 276;
   double bottomMapPadding = 0;
+  double rideDetailContainerHeight = 0;
 
   @override
   void initState() {
@@ -70,7 +71,8 @@ class _HomepageState extends State<Homepage> {
         ),
       ));
     }
-    await CommonMethods.convertGeoGraphicCodingIntoHumanReadableAddress(currentPosition!,context);
+    await CommonMethods.convertGeoGraphicCodingIntoHumanReadableAddress(
+        currentPosition!, context);
 
     getUserInfoAndCheckBlockStatus();
   }
@@ -102,6 +104,14 @@ class _HomepageState extends State<Homepage> {
             MaterialPageRoute(
                 builder: (BuildContext context) => LoginScreen()));
       }
+    });
+  }
+
+  displayUserRideDetailContainer() {
+    setState(() {
+      searchHeightContainer = 0;
+      bottomMapPadding = 240;
+      rideDetailContainerHeight = 242;
     });
   }
 
@@ -172,6 +182,7 @@ class _HomepageState extends State<Homepage> {
       ),
       body: Stack(
         children: [
+          /// google map
           GoogleMap(
             padding: EdgeInsets.only(top: 26, bottom: bottomMapPadding),
             mapType: MapType.normal,
@@ -194,6 +205,8 @@ class _HomepageState extends State<Homepage> {
               });
             },
           ),
+
+          //drawer
           Positioned(
             top: 42,
             left: 19,
@@ -222,57 +235,135 @@ class _HomepageState extends State<Homepage> {
               ),
             ),
           ),
+
+          // search location icon button
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: -80,
+            child: Container(
+              height: searchHeightContainer,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  ElevatedButton(
+                      onPressed: () async {
+                        var responseFromSearchPage = await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (BuildContext context) =>
+                                    SearchDestinationPage()));
+
+                        if (responseFromSearchPage == "placeSelected") {
+                          displayUserRideDetailContainer();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          shape: CircleBorder(),
+                          padding: const EdgeInsets.all(24)),
+                      child: const Icon(
+                        Icons.search,
+                        color: Colors.white,
+                        size: 25,
+                      )),
+                  ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          shape: CircleBorder(),
+                          padding: const EdgeInsets.all(24)),
+                      child: const Icon(
+                        Icons.home,
+                        color: Colors.white,
+                        size: 25,
+                      )),
+                  ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey,
+                          shape: CircleBorder(),
+                          padding: const EdgeInsets.all(24)),
+                      child: const Icon(
+                        Icons.work,
+                        color: Colors.white,
+                        size: 25,
+                      ))
+                ],
+              ),
+            ),
+          ),
+
+          //ride details container
           Positioned(
               left: 0,
               right: 0,
-              bottom: -80,
+              bottom: 0,
               child: Container(
-                height: searchHeightContainer,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    ElevatedButton(
-                        onPressed: () {
-                          Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (BuildContext context) =>
-                                      SearchDestinationPage()));
-                        },
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey,
-                            shape: CircleBorder(),
-                            padding: const EdgeInsets.all(24)),
-                        child: const Icon(
-                          Icons.search,
-                          color: Colors.white,
-                          size: 25,
-                        )),
-                    ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey,
-                            shape: CircleBorder(),
-                            padding: const EdgeInsets.all(24)),
-                        child: const Icon(
-                          Icons.home,
-                          color: Colors.white,
-                          size: 25,
-                        )),
-                    ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.grey,
-                            shape: CircleBorder(),
-                            padding: const EdgeInsets.all(24)),
-                        child: const Icon(
-                          Icons.work,
-                          color: Colors.white,
-                          size: 25,
-                        ))
-                  ],
+                height: rideDetailContainerHeight,
+                decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(15),
+                        topRight: Radius.circular(15)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black45,
+                        blurRadius: 5,
+                        spreadRadius: 0.5,
+                        offset: Offset(0.7, 0.7),
+                      ),
+                    ]),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 18),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(left: 16, right: 16),
+                        child: SizedBox(
+                          height: 190,
+                          child: Card(
+                            elevation: 10,
+                            child: Container(
+                              width: MediaQuery.of(context).size.width * .70,
+                              color: Colors.black45,
+                              child: Padding(
+                                padding: EdgeInsets.only(top: 8, bottom: 8),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '2 km',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white70),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {},
+                                      child: Image.asset(
+                                          "assets/images/uberexec.png",
+                                          height: 122,
+                                          width: 122),
+                                    ),
+                                    Text(
+                                      '\$12',
+                                      style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
                 ),
-              ))
+              )),
         ],
       ),
     );

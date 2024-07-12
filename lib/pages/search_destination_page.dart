@@ -180,6 +180,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                 ? Padding(
                     padding: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     child: ListView.separated(
+                      padding: EdgeInsets.all(0),
                       itemBuilder: (context, index) {
                         return Card(
                             elevation: 3,
