@@ -78,6 +78,7 @@ flutter:
     - assets/images/initial.png
     - assets/images/uberexec.png
     - assets/images/final.png
+    - assets/images/tracking.png
     - themes/
   # assets:
   #   - images/a_dot_burr.jpeg
