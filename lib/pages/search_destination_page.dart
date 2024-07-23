@@ -61,14 +61,17 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
               elevation: 10,
               child: Container(
                 height: 230,
-                decoration:
-                    const BoxDecoration(color: Colors.black12, boxShadow: [
-                  BoxShadow(
-                      color: Colors.black26,
-                      blurRadius: 5.0,
-                      spreadRadius: 0.5,
-                      offset: Offset(0.7, 0.7))
-                ]),
+                decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Color(0xFFD1D1D1)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        spreadRadius: 2,
+                        blurRadius: 4,
+                        offset: Offset(0, 2),
+                      ),
+                    ]),
                 child: Padding(
                   padding:
                       EdgeInsets.only(left: 24, top: 48, right: 24, bottom: 20),
@@ -81,17 +84,21 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                       Stack(
                         children: [
                           GestureDetector(
-                            onTap: () {},
+                            onTap: () {
+                              Navigator.pop(context);
+                            },
                             child: Icon(
                               Icons.arrow_back,
-                              color: Colors.white,
+                              color: Colors.black,
                             ),
                           ),
                           Center(
                               child: Text(
                             'Set Dropoff Location',
                             style: TextStyle(
-                                fontSize: 18, fontWeight: FontWeight.bold),
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black),
                           ))
                         ],
                       ),
@@ -112,7 +119,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                           Expanded(
                               child: Container(
                             decoration: BoxDecoration(
-                                color: Colors.grey,
+                                color: Colors.black12,
                                 borderRadius: BorderRadius.circular(5)),
                             child: Padding(
                               padding: const EdgeInsets.all(3),
@@ -149,7 +156,7 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
                           Expanded(
                               child: Container(
                             decoration: BoxDecoration(
-                                color: Colors.grey,
+                                color: Colors.black12,
                                 borderRadius: BorderRadius.circular(5)),
                             child: Padding(
                               padding: const EdgeInsets.all(3),

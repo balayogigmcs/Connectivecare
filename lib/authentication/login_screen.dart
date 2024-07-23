@@ -68,6 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (snap.snapshot.value != null) {
           if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
             userName = (snap.snapshot.value as Map)["name"];
+            userPhone = (snap.snapshot.value as Map)["phone"];
             Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -93,10 +94,17 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
-              Image.asset("assets/images/logo.png"),
-              const Text(
+              Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Image.asset(
+                  "assets/images/logo.png",
+                  width: 200,
+                  height: 200,
+                ),
+              ),
+              Text(
                 'Login As a User',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
               Padding(
                 padding: const EdgeInsets.all(5),
@@ -105,9 +113,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     TextField(
                       controller: emailTextEditingController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: ' email',
-                          labelStyle: TextStyle(fontSize: 14)),
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
                       height: 22,
@@ -116,9 +124,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: passwordTextEditingController,
                       obscureText: true,
                       keyboardType: TextInputType.text,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: ' password',
-                          labelStyle: TextStyle(fontSize: 14)),
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
                       height: 22,
@@ -128,12 +136,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         checkIfNetworkAvailable();
                       },
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
+                          backgroundColor: Colors.blue,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 80, vertical: 10)),
                       child: const Text(
                         'Login',
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                     const SizedBox(
@@ -146,9 +154,9 @@ class _LoginScreenState extends State<LoginScreen> {
                             MaterialPageRoute(
                                 builder: (context) => SignupScreen()));
                       },
-                      child: const Text(
+                      child:  Text(
                         'Don\'t have a account? Register here',
-                        style: TextStyle(color: Colors.white),
+                        style: Theme.of(context).textTheme.bodyLarge,
                       ),
                     )
                   ],

@@ -86,7 +86,14 @@ class _SignupScreenState extends State<SignupScreen> {
           padding: const EdgeInsets.all(10),
           child: Column(
             children: [
-              Image.asset("assets/images/logo.png"),
+              Padding(
+                padding: const EdgeInsets.all(40.0),
+                child: Image.asset(
+                  "assets/images/logo.png",
+                  width: 200,
+                  height: 200,
+                ),
+              ),
               const Text(
                 'Create User\'s Account',
                 style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
@@ -98,9 +105,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextField(
                       controller: usernameTextEditingController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: ' username',
-                          labelStyle: TextStyle(fontSize: 14)),
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
                       height: 22,
@@ -108,9 +115,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextField(
                       controller: phoneTextEditingController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: 'Phone number',
-                          labelStyle: TextStyle(fontSize: 14)),
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
                       height: 22,
@@ -118,9 +125,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     TextField(
                       controller: emailTextEditingController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: ' email',
-                          labelStyle: TextStyle(fontSize: 14)),
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
                       height: 22,
@@ -129,9 +136,9 @@ class _SignupScreenState extends State<SignupScreen> {
                       controller: passwordTextEditingController,
                       obscureText: true,
                       keyboardType: TextInputType.text,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                           labelText: ' password',
-                          labelStyle: TextStyle(fontSize: 14)),
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
                       height: 22,
@@ -141,12 +148,12 @@ class _SignupScreenState extends State<SignupScreen> {
                         checkIfNetworkAvailable();
                       },
                       style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
+                          backgroundColor: Colors.blue,
                           padding: const EdgeInsets.symmetric(
                               horizontal: 80, vertical: 10)),
                       child: const Text(
                         'Sign Up',
-                        style: TextStyle(color: Colors.black),
+                        style: TextStyle(color: Colors.white),
                       ),
                     ),
                     const SizedBox(
@@ -159,9 +166,9 @@ class _SignupScreenState extends State<SignupScreen> {
                             MaterialPageRoute(
                                 builder: (context) => LoginScreen()));
                       },
-                      child: const Text(
+                      child: Text(
                         'Already have a account? Login here',
-                        style: TextStyle(color: Colors.white),
+                        style: Theme.of(context).textTheme.bodyLarge,
                       ),
                     )
                   ],
