@@ -17,14 +17,14 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
       appBar: AppBar(
         title: Text(
           "My Trips History",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: Colors.black),
         ),
         leading: IconButton(
           onPressed: () {
             Navigator.pop(context);
           },
           icon: Icon(Icons.arrow_back),
-          color: Colors.white,
+          color: Colors.black,
         ),
       ),
       body: StreamBuilder(
@@ -34,7 +34,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
               return Center(
                   child: Text(
                 "Error Occured",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.black),
               ));
             }
 
@@ -42,7 +42,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
               return Center(
                   child: Text(
                 "No Record Found",
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: Colors.black),
               ));
             }
 
@@ -61,7 +61,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
                           FirebaseAuth.instance.currentUser!.uid) {
                     return Card(
                       elevation: 10,
-                      color: Colors.white10,
+                      color: Colors.white,
                       child: Padding(
                         padding:
                             EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -81,7 +81,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
                                   tripsList[index]["pickUpAddress"].toString(),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white38,fontSize: 18
+                                    color: Colors.black,fontSize: 18
                                   ),
                                 ),
                                 ),
@@ -92,7 +92,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
                                   "\$" + tripsList[index]["fareAmount"].toString(),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white,fontSize: 16
+                                    color: Colors.black,fontSize: 16
                                   ),
                                 ),
                               ],
@@ -104,7 +104,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
                                 // dropOff Address 
                             Row(
                               children: [
-                                Image.asset("assets/images/initial.png",
+                                Image.asset("assets/images/final.png",
                                     height: 16, width: 16),
                                 const SizedBox(
                                   width: 18,
@@ -114,7 +114,7 @@ class _TripsHistoryPageState extends State<TripsHistoryPage> {
                                   tripsList[index]["dropOffAddress"].toString(),
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
-                                    color: Colors.white38,fontSize: 18
+                                    color: Colors.black,fontSize: 18
                                   ),
                                 ),
                                 ),

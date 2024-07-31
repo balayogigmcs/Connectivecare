@@ -1,15 +1,15 @@
 import 'package:cccc/methods/common_methods.dart';
 import 'package:flutter/material.dart';
 
-class PaymentDialog extends StatefulWidget {
+class TripCompletion extends StatefulWidget {
   String? fareAmount;
-  PaymentDialog({super.key, required this.fareAmount});
+  TripCompletion({super.key, required this.fareAmount});
 
   @override
-  State<PaymentDialog> createState() => _PaymentDialogState();
+  State<TripCompletion> createState() => _TripCompletionState();
 }
 
-class _PaymentDialogState extends State<PaymentDialog> {
+class _TripCompletionState extends State<TripCompletion> {
 
   CommonMethods cmethods = CommonMethods();
 
@@ -32,7 +32,7 @@ class _PaymentDialogState extends State<PaymentDialog> {
                 height: 21,
               ),
               Text(
-                "PAY CASH",
+                "PAY CASHing",
                 style: TextStyle(color: Colors.grey),
               ),
               const SizedBox(
@@ -69,12 +69,11 @@ class _PaymentDialogState extends State<PaymentDialog> {
               ),
               ElevatedButton(
                   onPressed: () {
-                    Navigator.pop(context);
                     Navigator.pop(context, "PAID");
                   },
                   style:
                       ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                  child: const Text('PAY CASH')),
+                  child: Text('PAY CASH')),
               const SizedBox(
                 height: 41,
               ),

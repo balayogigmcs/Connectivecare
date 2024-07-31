@@ -53,6 +53,11 @@ dependencies:
   googleapis_auth: ^1.6.0
   url_launcher: ^6.3.0
   flutter_dotenv: ^5.1.0
+  flutter_stripe: ^11.0.0
+  font_awesome_flutter: ^10.7.0
+  flutter_form_builder: ^9.3.0
+  cloud_firestore: ^5.1.0
+  form_builder_validators: ^11.0.0
   
 
 dev_dependencies:
@@ -84,6 +89,7 @@ flutter:
     - assets/images/uberexec.png
     - assets/images/final.png
     - assets/images/tracking.png
+    - assets/images/
     - themes/
     - .env
   # assets:

@@ -16,11 +16,11 @@ class _InfoDialogState extends State<InfoDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      backgroundColor: Colors.grey,
+      backgroundColor: Colors.white60,
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.black54,
+          color: Colors.black,
           borderRadius: BorderRadius.circular(6),
         ),
         child: Padding(

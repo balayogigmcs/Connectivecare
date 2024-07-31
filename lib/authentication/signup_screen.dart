@@ -1,6 +1,6 @@
 import 'package:cccc/authentication/login_screen.dart';
+import 'package:cccc/forms/personaldetails.dart';
 import 'package:cccc/methods/common_methods.dart';
-import 'package:cccc/pages/homepage.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -15,7 +15,6 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
-  TextEditingController usernameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
   TextEditingController phoneTextEditingController = TextEditingController();
@@ -29,10 +28,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   signUpFormValidation() {
     String email = emailTextEditingController.text.trim();
-    if (usernameTextEditingController.text.trim().length < 4) {
-      cmethods.displaySnackbar(
-          'Your Username must be atleast 4 characters', context);
-    } else if (phoneTextEditingController.text.trim().length < 10) {
+    if (phoneTextEditingController.text.trim().length < 10) {
       cmethods.displaySnackbar(
           'Your Phone number must be atleast 10 characters', context);
     } else if (!email.contains('@')) {
@@ -67,7 +63,6 @@ class _SignupScreenState extends State<SignupScreen> {
         FirebaseDatabase.instance.ref().child('users').child(userFirebase!.uid);
 
     Map userDataMap = {
-      'name': usernameTextEditingController.text.trim(),
       'email': emailTextEditingController.text.trim(),
       'phone': phoneTextEditingController.text.trim(),
       'uid': userFirebase.uid,
@@ -75,7 +70,7 @@ class _SignupScreenState extends State<SignupScreen> {
     };
     usersRef.set(userDataMap);
     Navigator.push(context,
-        MaterialPageRoute(builder: (BuildContext context) => Homepage()));
+        MaterialPageRoute(builder: (BuildContext context) => PersonalDetails()));
   }
 
   @override
@@ -102,11 +97,21 @@ class _SignupScreenState extends State<SignupScreen> {
                 padding: const EdgeInsets.all(5),
                 child: Column(
                   children: [
+                    // TextField(
+                    //   controller: usernameTextEditingController,
+                    //   keyboardType: TextInputType.emailAddress,
+                    //   decoration: InputDecoration(
+                    //       labelText: ' username',
+                    //       labelStyle: Theme.of(context).textTheme.bodyLarge),
+                    // ),
+                    // const SizedBox(
+                    //   height: 22,
+                    // ),
                     TextField(
-                      controller: usernameTextEditingController,
+                      controller: emailTextEditingController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                          labelText: ' username',
+                          labelText: ' email',
                           labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
@@ -123,10 +128,11 @@ class _SignupScreenState extends State<SignupScreen> {
                       height: 22,
                     ),
                     TextField(
-                      controller: emailTextEditingController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: passwordTextEditingController,
+                      obscureText: true,
+                      keyboardType: TextInputType.text,
                       decoration: InputDecoration(
-                          labelText: ' email',
+                          labelText: ' password',
                           labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(
@@ -137,7 +143,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       obscureText: true,
                       keyboardType: TextInputType.text,
                       decoration: InputDecoration(
-                          labelText: ' password',
+                          labelText: 'Re-enter password',
                           labelStyle: Theme.of(context).textTheme.bodyLarge),
                     ),
                     const SizedBox(

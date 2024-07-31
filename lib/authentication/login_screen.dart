@@ -1,4 +1,5 @@
 import 'package:cccc/authentication/signup_screen.dart';
+import 'package:cccc/forms/personaldetails.dart';
 import 'package:cccc/global/global_var.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
@@ -16,7 +17,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  TextEditingController usernameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
   CommonMethods cmethods = CommonMethods();
@@ -156,7 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       },
                       child:  Text(
                         'Don\'t have a account? Register here',
-                        style: Theme.of(context).textTheme.bodyLarge,
+                        style: TextStyle(color: Colors.blue),
                       ),
                     )
                   ],
