@@ -228,17 +228,16 @@ class CommonMethods
     return detailsModel;
   }
 
-  calculateFareAmount(DirectionDetails directionDetails)
-  {
-    double distancePerKmAmount = 0.4;
-    double durationPerMinuteAmount = 0.3;
-    double baseFareAmount = 2;
+  double calculateFareAmount(DirectionDetails directionDetails) {
+  double distancePerKmAmount = 0.4;
+  double durationPerMinuteAmount = 0.3;
+  double baseFareAmount = 2;
 
-    double totalDistanceTravelFareAmount = (directionDetails.distanceValueDigits! / 1000) * distancePerKmAmount;
-    double totalDurationSpendFareAmount = (directionDetails.durationValueDigits! / 60) * durationPerMinuteAmount;
+  double totalDistanceTravelFareAmount = (directionDetails.distanceValueDigits! / 1000) * distancePerKmAmount;
+  double totalDurationSpendFareAmount = (directionDetails.durationValueDigits! / 60) * durationPerMinuteAmount;
 
-    double overAllTotalFareAmount = baseFareAmount + totalDistanceTravelFareAmount + totalDurationSpendFareAmount;
+  double overAllTotalFareAmount = baseFareAmount + totalDistanceTravelFareAmount + totalDurationSpendFareAmount;
 
-    return overAllTotalFareAmount.toStringAsFixed(1);
-  }
+  return double.parse(overAllTotalFareAmount.toStringAsFixed(1));
+}
 }

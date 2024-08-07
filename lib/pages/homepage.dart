@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:cccc/forms/mobility_aids.dart';
-import 'package:cccc/main.dart';
+import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:cccc/pages/main_page.dart';
 import 'package:cccc/pages/personal_details_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,7 +18,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
-// import 'package:restart_app/restart_app.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cccc/authentication/login_screen.dart';
 import 'package:cccc/global/global_var.dart';
@@ -55,7 +54,6 @@ class _HomepageState extends State<Homepage> {
   double rideDetailsContainerHeight = 0;
   double requestContainerHeight = 0;
   double tripContainerHeight = 0;
-  // double paymentContainerHeight = 0;
   DirectionDetails? tripDirectionDetailsInfo;
   List<LatLng> polylineCoOrdinates = [];
   Set<Polyline> polylineSet = {};
@@ -69,7 +67,9 @@ class _HomepageState extends State<Homepage> {
   List<OnlineNearbyDrivers>? availableNearbyOnlineDriversList;
   StreamSubscription<DatabaseEvent>? tripStreamSubscription;
   bool requestingDirectionDetailsInfo = false;
-  // bool hasDonated = false;
+
+  final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
 
   makeDriverNearbyCarIcon() {
     if (carIconNearbyDriver == null) {
@@ -100,54 +100,75 @@ class _HomepageState extends State<Homepage> {
   }
 
   getCurrentLiveLocationOfUser() async {
-    Position positionOfUser = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.bestForNavigation);
-    currentPositionOfUser = positionOfUser;
+    try {
+      Position positionOfUser = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.bestForNavigation);
+      currentPositionOfUser = positionOfUser;
 
-    LatLng positionOfUserInLatLng = LatLng(
-        currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
+      LatLng positionOfUserInLatLng = LatLng(
+          currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
 
-    CameraPosition cameraPosition =
-        CameraPosition(target: positionOfUserInLatLng, zoom: 15);
-    controllerGoogleMap!
-        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+      CameraPosition cameraPosition =
+          CameraPosition(target: positionOfUserInLatLng, zoom: 15);
+      controllerGoogleMap!
+          .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
 
-    await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(
-        currentPositionOfUser!, context);
+      await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(
+          currentPositionOfUser!, context);
 
-    await getUserInfoAndCheckBlockStatus();
+      await getUserInfoAndCheckBlockStatus();
 
-    await initializeGeoFireListener();
+      await initializeGeoFireListener();
+    } catch (e) {
+      // Handle exceptions if needed
+      print('Error in getCurrentLiveLocationOfUser: $e');
+    }
   }
 
   getUserInfoAndCheckBlockStatus() async {
-    DatabaseReference usersRef = FirebaseDatabase.instance
-        .ref()
-        .child("users")
-        .child(FirebaseAuth.instance.currentUser!.uid);
+    try {
+      DatabaseReference usersRef = FirebaseDatabase.instance
+          .ref()
+          .child("users")
+          .child(FirebaseAuth.instance.currentUser!.uid);
 
-    await usersRef.once().then((snap) {
-      if (snap.snapshot.value != null) {
-        if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
-          setState(() {
-            userName = (snap.snapshot.value as Map)["name"];
-            userPhone = (snap.snapshot.value as Map)["phone"];
-          });
+      DatabaseEvent event = await usersRef.once();
+      DataSnapshot snap = event.snapshot;
+
+      if (snap.value != null) {
+        Map userData = snap.value as Map;
+        String? blockStatus = userData["blockStatus"];
+        String? name = userData["firstName"] + userData["lastName"];
+        String? phone = userData["phone"];
+
+        if (blockStatus == "no") {
+          if (mounted) {
+            setState(() {
+              userName = name ?? 'Unknown';
+              userPhone = phone ?? 'Unknown';
+            });
+          }
         } else {
           FirebaseAuth.instance.signOut();
+          if (mounted) {
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (c) => LoginScreen()));
 
-          Navigator.push(
-              context, MaterialPageRoute(builder: (c) => LoginScreen()));
-
-          cMethods.displaySnackbar(
-              "you are blocked. Contact admin: alizeb875@gmail.com", context);
+            cMethods.displaySnackbar(
+                "You are blocked. Contact admin: alizeb875@gmail.com", context);
+          }
         }
       } else {
         FirebaseAuth.instance.signOut();
-        Navigator.push(
-            context, MaterialPageRoute(builder: (c) => LoginScreen()));
+        if (mounted) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (c) => LoginScreen()));
+        }
       }
-    });
+    } catch (e) {
+      // Handle exceptions if needed
+      print('Error in getUserInfoAndCheckBlockStatus: $e');
+    }
   }
 
   displayUserRideDetailsContainer() async {
@@ -161,20 +182,6 @@ class _HomepageState extends State<Homepage> {
       isDrawerOpened = false;
     });
   }
-
-  // displayPaymentDetailsContainer() async {
-  //   setState(() {
-  //     searchContainerHeight = 0;
-  //     bottomMapPadding = 240;
-  //     rideDetailsContainerHeight = 0;
-  //     isDrawerOpened = false;
-  //   });
-
-  //   await initPaymentSheet();
-  //   await presentPaymentSheet();
-
-  //   ///Directions API
-  // }
 
   retrieveDirectionDetails() async {
     var pickUpLocation =
@@ -378,24 +385,23 @@ class _HomepageState extends State<Homepage> {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception('Failed to create payment intent');
+      final errorResponse = jsonDecode(response.body);
+      print('Failed to create payment intent: $errorResponse');
+      throw Exception(
+          'Failed to create payment intent: ${errorResponse['error']['message']}');
     }
   }
 
-  Future<void> initPaymentSheet() async {
+  Future<void> initPaymentSheet(String amount) async {
     try {
-      // Replace with your API call to create a Payment Intent
       final data = await createPaymentIntent(
-        amount: '1000', // Example amount in the smallest currency unit
+        amount: amount,
         currency: 'USD',
       );
 
-      // Initialize the payment sheet
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
-          // Set to true for custom flow
           customFlow: false,
-          // Main params
           merchantDisplayName: 'Test Merchant',
           paymentIntentClientSecret: data['client_secret'],
           customerEphemeralKeySecret: data['ephemeralKey'],
@@ -430,6 +436,84 @@ class _HomepageState extends State<Homepage> {
       );
     }
   }
+
+  // Future<Map<String, dynamic>> createPaymentIntent({
+  //   required String amount,
+  //   required String currency,
+  // }) async {
+  //   final url = Uri.parse('https://api.stripe.com/v1/payment_intents');
+  //   final secretKey = dotenv.env["STRIPE_SECRET_KEY"]!;
+  //   final body = {
+  //     'amount': amount,
+  //     'currency': currency,
+  //     'automatic_payment_methods[enabled]': 'true',
+  //     'description': "Test Payment",
+  //   };
+
+  //   final response = await http.post(
+  //     url,
+  //     headers: {
+  //       "Authorization": "Bearer $secretKey",
+  //       'Content-Type': 'application/x-www-form-urlencoded',
+  //     },
+  //     body: body,
+  //   );
+
+  //   if (response.statusCode == 200) {
+  //     return jsonDecode(response.body);
+  //   } else {
+  //     throw Exception('Failed to create payment intent');
+  //   }
+  // }
+
+  // Future<void> initPaymentSheet() async {
+  //   try {
+  //     // Replace with your API call to create a Payment Intent
+  //     final data = await createPaymentIntent(
+  //       amount: "10000", // Example amount in the smallest currency unit
+  //       currency: 'USD',
+  //     );
+
+  //     // Initialize the payment sheet
+  //     await Stripe.instance.initPaymentSheet(
+  //       paymentSheetParameters: SetupPaymentSheetParameters(
+  //         // Set to true for custom flow
+  //         customFlow: false,
+  //         // Main params
+  //         merchantDisplayName: 'Test Merchant',
+  //         paymentIntentClientSecret: data['client_secret'],
+  //         customerEphemeralKeySecret: data['ephemeralKey'],
+  //         customerId: data['id'],
+  //         style: ThemeMode.dark,
+  //       ),
+  //     );
+  //   } catch (e) {
+  //     scaffoldMessengerKey.currentState?.showSnackBar(
+  //       SnackBar(content: Text('Error: $e')),
+  //     );
+  //     rethrow;
+  //   }
+  // }
+
+  // Future<void> presentPaymentSheet() async {
+  //   try {
+  //     await Stripe.instance.presentPaymentSheet();
+  //     scaffoldMessengerKey.currentState?.showSnackBar(
+  //       SnackBar(
+  //         content: Text('Payment Successful'),
+  //         backgroundColor: Colors.green,
+  //       ),
+  //     );
+  //     displayRequestContainer();
+  //   } catch (e) {
+  //     scaffoldMessengerKey.currentState?.showSnackBar(
+  //       SnackBar(
+  //         content: Text('Payment Failed: $e'),
+  //         backgroundColor: Colors.redAccent,
+  //       ),
+  //     );
+  //   }
+  // }
 
   displayRequestContainer() {
     print("displayingRequestContainer");
@@ -1254,8 +1338,17 @@ class _HomepageState extends State<Homepage> {
                                           onFormSubmitted: () async {
                                             // Continue the remaining code after form submission
                                             // displayRequestContainer();
-                                            await initPaymentSheet();
+                                            double c =
+                                                cMethods.calculateFareAmount(
+                                                    tripDirectionDetailsInfo!);
+                                            // Ensure amount is a valid integer in cents
+                                            int amountInCents =
+                                                (c * 100).round();
+                                            String amount =
+                                                amountInCents.toString();
+                                            await initPaymentSheet(amount);
                                             await presentPaymentSheet();
+                                            // audioPlayer.open(Audio("assets/audio/alert_sound.mp3"));
                                             availableNearbyOnlineDriversList =
                                                 ManageDriversMethod
                                                     .nearbyOnlineDriversList;

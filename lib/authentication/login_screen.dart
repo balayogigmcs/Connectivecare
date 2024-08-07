@@ -1,5 +1,4 @@
 import 'package:cccc/authentication/signup_screen.dart';
-import 'package:cccc/forms/personaldetails.dart';
 import 'package:cccc/global/global_var.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';

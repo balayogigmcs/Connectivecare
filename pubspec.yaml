@@ -58,6 +58,7 @@ dependencies:
   flutter_form_builder: ^9.3.0
   cloud_firestore: ^5.1.0
   form_builder_validators: ^11.0.0
+  assets_audio_player: ^3.1.1
   
 
 dev_dependencies:
@@ -90,6 +91,7 @@ flutter:
     - assets/images/final.png
     - assets/images/tracking.png
     - assets/images/
+    - assets/audio/
     - themes/
     - .env
   # assets:

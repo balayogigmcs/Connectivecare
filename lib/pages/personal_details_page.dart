@@ -46,7 +46,7 @@ class PersonalDetailsDisplayPage extends StatelessWidget {
     if (user != null) {
       final snapshot = await FirebaseDatabase.instance
           .ref()
-          .child('personalinformation')
+          .child('users')
           .child(user.uid)
           .get();
       if (snapshot.exists) {

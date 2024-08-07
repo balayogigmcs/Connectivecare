@@ -37,73 +37,76 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildSectionTitle('Type of Mobility Aid:'),
+                    const SizedBox(height: 10,),
                     _buildHorizontalScroll(
                       'mobilityAidType',
                       ['Wheelchair', 'Walker', 'Cane', 'Other mobility aids'],
                     ),
+                    // SizedBox(height: 20),
+                    // _buildSectionTitle('Assistance with Mobility Aids:'),
+                    // _buildCheckbox(
+                    //   'foldingAssistance',
+                    //   'Need for assistance with folding mobility aids',
+                    // ),
+                    // _buildCheckbox(
+                    //   'storingAssistance',
+                    //   'Need for assistance with storing mobility aids',
+                    // ),
+                    // SizedBox(height: 20),
+                    // _buildSectionTitle('Vehicle Accessibility:'),
+                    // _buildCheckbox(
+                    //   'wheelchairAccessibility',
+                    //   'Requirement for wheelchair accessibility',
+                    // ),
+                    // _buildCheckbox(
+                    //   'equippedWithRamp',
+                    //   'Equipped with a ramp',
+                    // ),
+                    // _buildCheckbox(
+                    //   'equippedWithLift',
+                    //   'Equipped with a lift',
+                    // ),
+                    // SizedBox(height: 20),
+                    // _buildSectionTitle('Assistance with Transfers:'),
+                    // _buildCheckbox(
+                    //   'vehicleTransferHelp',
+                    //   'Requirement for help getting in and out of the vehicle',
+                    // ),
+                    // SizedBox(height: 20),
+                    // _buildSectionTitle('Safety Instructions:'),
+                    // _buildText(
+                    //   'Instructions on how to safely assist the patient without causing injury',
+                    // ),
+                    // SizedBox(height: 20),
+                    // _buildSectionTitle('Walking Assistance:'),
+                    // _buildCheckbox(
+                    //   'walkingAssistance',
+                    //   'Requirement for assistance walking to and from the vehicle',
+                    // ),
+                    // _buildText(
+                    //   'Specifics on how to guide the patient and how to support the patient',
+                    // ),
                     SizedBox(height: 20),
-                    _buildSectionTitle('Assistance with Mobility Aids:'),
-                    _buildCheckbox(
-                      'foldingAssistance',
-                      'Need for assistance with folding mobility aids',
-                    ),
-                    _buildCheckbox(
-                      'storingAssistance',
-                      'Need for assistance with storing mobility aids',
-                    ),
-                    SizedBox(height: 20),
-                    _buildSectionTitle('Vehicle Accessibility:'),
-                    _buildCheckbox(
-                      'wheelchairAccessibility',
-                      'Requirement for wheelchair accessibility',
-                    ),
-                    _buildCheckbox(
-                      'equippedWithRamp',
-                      'Equipped with a ramp',
-                    ),
-                    _buildCheckbox(
-                      'equippedWithLift',
-                      'Equipped with a lift',
-                    ),
-                    SizedBox(height: 20),
-                    _buildSectionTitle('Assistance with Transfers:'),
-                    _buildCheckbox(
-                      'vehicleTransferHelp',
-                      'Requirement for help getting in and out of the vehicle',
-                    ),
-                    SizedBox(height: 20),
-                    _buildSectionTitle('Safety Instructions:'),
-                    _buildText(
-                      'Instructions on how to safely assist the patient without causing injury',
-                    ),
-                    SizedBox(height: 20),
-                    _buildSectionTitle('Walking Assistance:'),
-                    _buildCheckbox(
-                      'walkingAssistance',
-                      'Requirement for assistance walking to and from the vehicle',
-                    ),
-                    _buildText(
-                      'Specifics on how to guide the patient and how to support the patient',
-                    ),
-                    SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (_formKey.currentState?.saveAndValidate() ?? false) {
-                          final formData = Map<String, dynamic>.from(
-                              _formKey.currentState?.value ?? {});
-                          _saveFormData(formData);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        padding: EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10.0),
+                    Center(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_formKey.currentState?.saveAndValidate() ?? false) {
+                            final formData = Map<String, dynamic>.from(
+                                _formKey.currentState?.value ?? {});
+                            _saveFormData(formData);
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          padding: EdgeInsets.symmetric(vertical: 15,horizontal: 20),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.0),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'Submit',
-                        style: TextStyle(fontSize: 18),
+                        child: Text(
+                          'Submit',
+                          style: TextStyle(fontSize: 18),
+                        ),
                       ),
                     ),
                     SizedBox(height: 20),
