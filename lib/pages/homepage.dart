@@ -138,7 +138,7 @@ class _HomepageState extends State<Homepage> {
       if (snap.value != null) {
         Map userData = snap.value as Map;
         String? blockStatus = userData["blockStatus"];
-        String? name = userData["firstName"] + userData["lastName"];
+        String? name = userData["firstName"];
         String? phone = userData["phone"];
 
         if (blockStatus == "no") {
