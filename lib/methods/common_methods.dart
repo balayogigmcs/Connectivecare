@@ -151,28 +151,47 @@ class CommonMethods
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  static sendRequestToAPI(String apiUrl) async
-  {
-    http.Response responseFromAPI = await http.get(Uri.parse(apiUrl));
 
-    try
-    {
-      if(responseFromAPI.statusCode == 200)
-      {
-        String dataFromApi = responseFromAPI.body;
-        var dataDecoded = jsonDecode(dataFromApi);
-        return dataDecoded;
-      }
-      else
-      {
-        return "error";
-      }
+static Future<dynamic> sendRequestToAPI(String apiUrl) async {
+  try {
+    final responseFromAPI = await http.get(Uri.parse(apiUrl));
+
+    if (responseFromAPI.statusCode == 200) {
+      String dataFromApi = responseFromAPI.body;
+      var dataDecoded = jsonDecode(dataFromApi);
+      return dataDecoded; // Returning the decoded data
+    } else {
+      return null; // Returning null in case of an error
     }
-    catch(errorMsg)
-    {
-      return "error";
-    }
+  } catch (errorMsg) {
+    print("Error occurred: $errorMsg");
+    return null; // Returning null if an exception occurs
   }
+}
+
+
+  // static sendRequestToAPI(String apiUrl) async
+  // {
+  //   http.Response responseFromAPI = await http.get(Uri.parse(apiUrl));
+
+  //   try
+  //   {
+  //     if(responseFromAPI.statusCode == 200)
+  //     {
+  //       String dataFromApi = responseFromAPI.body;
+  //       var dataDecoded = jsonDecode(dataFromApi);
+  //       return dataDecoded;
+  //     }
+  //     else
+  //     {
+  //       return "error";
+  //     }
+  //   }
+  //   catch(errorMsg)
+  //   {
+  //     return "error";
+  //   }
+  // }
 
   ///Reverse GeoCoding
  static Future<String> convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(Position position, BuildContext context) async {

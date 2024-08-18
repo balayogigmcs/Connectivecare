@@ -6,7 +6,8 @@ String userName = "";
 String userPhone = "";
 String userID  = FirebaseAuth.instance.currentUser!.uid;
 
-String googleMapKey = "AIzaSyDCF3-Nl94jUPeUuDdpjT92DO3IjZF655o";
+// String googleMapKey = "AIzaSyDCF3-Nl94jUPeUuDdpjT92DO3IjZF655o";
+String googleMapKey = "AIzaSyAtedTYdh2b484usx8sIa1JELhOY7vOIJM";
 
 final audioPlayer = AssetsAudioPlayer();
 

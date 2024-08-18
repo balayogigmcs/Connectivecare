@@ -1,16 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 
+import 'package:cccc/checkout/stripe_checkout_web.dart';
 import 'package:cccc/forms/mobility_aids.dart';
-import 'package:assets_audio_player/assets_audio_player.dart';
 import 'package:cccc/pages/main_page.dart';
 import 'package:cccc/pages/personal_details_page.dart';
+import 'package:cccc/payment/payment_web.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -31,9 +33,9 @@ import 'package:cccc/pages/about_page.dart';
 import 'package:cccc/pages/search_destination_page.dart';
 import 'package:cccc/pages/trip_history_page.dart';
 import 'package:cccc/widgets/info_dialog.dart';
-import 'package:http/http.dart' as http;
 import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
+
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -102,11 +104,12 @@ class _HomepageState extends State<Homepage> {
   getCurrentLiveLocationOfUser() async {
     try {
       Position positionOfUser = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.bestForNavigation);
+          desiredAccuracy: LocationAccuracy.high);
       currentPositionOfUser = positionOfUser;
 
       LatLng positionOfUserInLatLng = LatLng(
           currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
+          print(positionOfUserInLatLng);
 
       CameraPosition cameraPosition =
           CameraPosition(target: positionOfUserInLatLng, zoom: 15);
@@ -117,8 +120,12 @@ class _HomepageState extends State<Homepage> {
           currentPositionOfUser!, context);
 
       await getUserInfoAndCheckBlockStatus();
-
-      await initializeGeoFireListener();
+      if (!kIsWeb) {
+        await initializeGeoFireListener();
+      } else {
+        print("initializeGeoFireListenerWeb");
+        initializeGeoFireListenerWeb();
+      }
     } catch (e) {
       // Handle exceptions if needed
       print('Error in getCurrentLiveLocationOfUser: $e');
@@ -352,89 +359,13 @@ class _HomepageState extends State<Homepage> {
 
   cancelRideRequest() {
     //remove ride request from database
+    print("in cancel Ride request");
     tripRequestRef!.remove();
     print("cancelRideRequest");
 
     setState(() {
       stateOfApp = "normal";
     });
-  }
-
-  Future<Map<String, dynamic>> createPaymentIntent({
-    required String amount,
-    required String currency,
-  }) async {
-    final url = Uri.parse('https://api.stripe.com/v1/payment_intents');
-    final secretKey = dotenv.env["STRIPE_SECRET_KEY"]!;
-    final body = {
-      'amount': amount,
-      'currency': currency,
-      'automatic_payment_methods[enabled]': 'true',
-      'description': "Test Payment",
-    };
-
-    final response = await http.post(
-      url,
-      headers: {
-        "Authorization": "Bearer $secretKey",
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: body,
-    );
-
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body);
-    } else {
-      final errorResponse = jsonDecode(response.body);
-      print('Failed to create payment intent: $errorResponse');
-      throw Exception(
-          'Failed to create payment intent: ${errorResponse['error']['message']}');
-    }
-  }
-
-  Future<void> initPaymentSheet(String amount) async {
-    try {
-      final data = await createPaymentIntent(
-        amount: amount,
-        currency: 'USD',
-      );
-
-      await Stripe.instance.initPaymentSheet(
-        paymentSheetParameters: SetupPaymentSheetParameters(
-          customFlow: false,
-          merchantDisplayName: 'Test Merchant',
-          paymentIntentClientSecret: data['client_secret'],
-          customerEphemeralKeySecret: data['ephemeralKey'],
-          customerId: data['id'],
-          style: ThemeMode.dark,
-        ),
-      );
-    } catch (e) {
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(content: Text('Error: $e')),
-      );
-      rethrow;
-    }
-  }
-
-  Future<void> presentPaymentSheet() async {
-    try {
-      await Stripe.instance.presentPaymentSheet();
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text('Payment Successful'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      displayRequestContainer();
-    } catch (e) {
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text('Payment Failed: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
-    }
   }
 
   // Future<Map<String, dynamic>> createPaymentIntent({
@@ -462,24 +393,23 @@ class _HomepageState extends State<Homepage> {
   //   if (response.statusCode == 200) {
   //     return jsonDecode(response.body);
   //   } else {
-  //     throw Exception('Failed to create payment intent');
+  //     final errorResponse = jsonDecode(response.body);
+  //     print('Failed to create payment intent: $errorResponse');
+  //     throw Exception(
+  //         'Failed to create payment intent: ${errorResponse['error']['message']}');
   //   }
   // }
 
-  // Future<void> initPaymentSheet() async {
+  // Future<void> initPaymentSheet(String amount) async {
   //   try {
-  //     // Replace with your API call to create a Payment Intent
   //     final data = await createPaymentIntent(
-  //       amount: "10000", // Example amount in the smallest currency unit
+  //       amount: amount,
   //       currency: 'USD',
   //     );
 
-  //     // Initialize the payment sheet
   //     await Stripe.instance.initPaymentSheet(
   //       paymentSheetParameters: SetupPaymentSheetParameters(
-  //         // Set to true for custom flow
   //         customFlow: false,
-  //         // Main params
   //         merchantDisplayName: 'Test Merchant',
   //         paymentIntentClientSecret: data['client_secret'],
   //         customerEphemeralKeySecret: data['ephemeralKey'],
@@ -494,26 +424,43 @@ class _HomepageState extends State<Homepage> {
   //     rethrow;
   //   }
   // }
+ // Import the service that handles platform-specific logic
 
-  // Future<void> presentPaymentSheet() async {
+
+  // void handlePayment(String amount) async {
   //   try {
-  //     await Stripe.instance.presentPaymentSheet();
+  //     await processPayment(amount);
   //     scaffoldMessengerKey.currentState?.showSnackBar(
   //       SnackBar(
-  //         content: Text('Payment Successful'),
+  //         content: Text('Payment processing started'),
   //         backgroundColor: Colors.green,
   //       ),
   //     );
-  //     displayRequestContainer();
   //   } catch (e) {
   //     scaffoldMessengerKey.currentState?.showSnackBar(
   //       SnackBar(
-  //         content: Text('Payment Failed: $e'),
+  //         content: Text('Error: $e'),
   //         backgroundColor: Colors.redAccent,
   //       ),
   //     );
   //   }
   // }
+
+
+
+  Future<void> presentPaymentSheet() async {
+    try {
+     
+      displayRequestContainer();
+    } catch (e) {
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(
+          content: Text('Payment Failed: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
 
   displayRequestContainer() {
     print("displayingRequestContainer");
@@ -617,6 +564,93 @@ class _HomepageState extends State<Homepage> {
         }
       }
     });
+  }
+
+  bool _isWithinRadius(double driverLat, double driverLng, double centerLat,
+      double centerLng, double radiusInKm) {
+    const double earthRadiusInKm = 6371.0;
+
+    double dLat = _degreesToRadians(driverLat - centerLat);
+    double dLng = _degreesToRadians(driverLng - centerLng);
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(centerLat)) *
+            cos(_degreesToRadians(driverLat)) *
+            sin(dLng / 2) *
+            sin(dLng / 2);
+
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+    double distance = earthRadiusInKm * c;
+
+    return distance <= radiusInKm;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * pi / 180.0;
+  }
+
+  initializeGeoFireListenerWeb() {
+    print('Starting initializeGeoFireListenerWeb');
+
+    final DatabaseReference driversRef =
+        FirebaseDatabase.instance.ref().child("onlineDrivers");
+    print('Fetched driversRef');
+
+    final double latitude = currentPositionOfUser!.latitude;
+    final double longitude = currentPositionOfUser!.longitude;
+    final double radiusInKm = 50.0;
+
+    final query = driversRef
+        .orderByChild('position'); // Assume 'position' is lat/lng pair
+    print('Created query for drivers based on position');
+
+    query.onValue.listen((event) {
+      print('Received event in GeoFire listener');
+      if (event.snapshot.value != null) {
+        final Map<dynamic, dynamic> driversMap =
+            event.snapshot.value as Map<dynamic, dynamic>;
+        print('Fetched driversMap with ${driversMap.length} entries');
+        driversMap.forEach((key, value) {
+          print('Processing driver: $key');
+
+          // Assuming value contains the position data as latitude and longitude
+          double driverLat = value['latitude'];
+          double driverLng = value['longitude'];
+
+          // Check if the driver is within the radius
+          if (_isWithinRadius(
+              driverLat, driverLng, latitude, longitude, radiusInKm)) {
+            // Handle the driver as within the radius
+            OnlineNearbyDrivers onlineNearbyDrivers = OnlineNearbyDrivers();
+            onlineNearbyDrivers.uidDriver = key;
+            onlineNearbyDrivers.latDriver = driverLat;
+            onlineNearbyDrivers.lngDriver = driverLng;
+
+            ManageDriversMethod.nearbyOnlineDriversList
+                .add(onlineNearbyDrivers);
+
+            if (nearbyOnlineDriversKeysLoaded == true) {
+              //update drivers on google map
+              updateAvailableNearbyOnlineDriversOnMap();
+            }
+          } else {
+            // Handle the driver as outside the radius if necessary
+            print('Driver $key is outside the radius');
+          }
+        });
+
+        nearbyOnlineDriversKeysLoaded = true;
+
+        //update drivers on google map
+        updateAvailableNearbyOnlineDriversOnMap();
+      } else {
+        print('No drivers found in GeoFire listener');
+      }
+    }).onError((error) {
+      print('Error in GeoFire listener: $error');
+    });
+
+    print('initializeGeoFireListenerWeb completed');
   }
 
   makeTripRequest() {
@@ -835,8 +869,11 @@ class _HomepageState extends State<Homepage> {
       print(availableNearbyOnlineDriversList!.length);
       print("length of available driver 0");
       cancelRideRequest();
+      print("cancelled ride Request");
       resetAppNow();
+      print("reset APP now");
       noDriverAvailable();
+      print("no Driver Available");
       print("SearchDriverEnded");
       return;
     }
@@ -937,7 +974,8 @@ class _HomepageState extends State<Homepage> {
 
     return Scaffold(
       key: sKey,
-      drawer: Container(
+      drawer: 
+      Container(
         width: 255,
         color: Colors.white,
         child: Drawer(
@@ -1099,7 +1137,9 @@ class _HomepageState extends State<Homepage> {
             ],
           ),
         ),
+     
       ),
+     
       body: Stack(
         children: [
           ///google map
@@ -1107,6 +1147,7 @@ class _HomepageState extends State<Homepage> {
             padding: EdgeInsets.only(top: 26, bottom: bottomMapPadding),
             mapType: MapType.normal,
             myLocationEnabled: true,
+            myLocationButtonEnabled: true,
             polylines: polylineSet,
             markers: markerSet,
             circles: circleSet,
@@ -1120,8 +1161,11 @@ class _HomepageState extends State<Homepage> {
               setState(() {
                 bottomMapPadding = 300;
               });
-
+              print("before getcurrentlivelocationofuser");
               getCurrentLiveLocationOfUser();
+              print("after getcurrentlivelocationofuser");
+
+              
             },
           ),
 
@@ -1343,11 +1387,24 @@ class _HomepageState extends State<Homepage> {
                                                     tripDirectionDetailsInfo!);
                                             // Ensure amount is a valid integer in cents
                                             int amountInCents =
-                                                (c * 100).round();
+                                                (c * 0.01).round();
                                             String amount =
                                                 amountInCents.toString();
-                                            await initPaymentSheet(amount);
-                                            await presentPaymentSheet();
+                                               final finalAmount = double.parse(amount);
+                                                print("before redirect to checkout");
+                                                 redirectToCheckout(context, finalAmount);
+                                                print("after redirect to checkout");
+                                              //  await initPaymentSheetWeb(amount);
+                                                 await presentPaymentSheet();
+                                                
+                                            // if(!kIsWeb){
+                                            // await initPaymentSheet(amount);
+                                            // await presentPaymentSheet();
+                                            // }
+                                            // else{
+                                            //   await initPaymentSheetWeb(amount);
+                                            //   await presentPaymentSheet();
+                                            // }
                                             // audioPlayer.open(Audio("assets/audio/alert_sound.mp3"));
                                             availableNearbyOnlineDriversList =
                                                 ManageDriversMethod
@@ -1675,6 +1732,8 @@ class _HomepageState extends State<Homepage> {
     );
   }
 }
+
+
 
 // import 'dart:async';
 // import 'dart:convert';

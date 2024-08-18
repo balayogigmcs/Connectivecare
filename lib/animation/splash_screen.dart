@@ -26,6 +26,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     )..repeat(reverse: true); // Logo scale animation
 
     _startAnimations();
+    print("Animation Started");
   }
 
   @override

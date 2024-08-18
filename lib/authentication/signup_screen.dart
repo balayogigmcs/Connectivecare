@@ -4,6 +4,7 @@ import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
@@ -15,6 +16,7 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  TextEditingController userNameTextEditingController = TextEditingController();
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passwordTextEditingController = TextEditingController();
   TextEditingController phoneTextEditingController = TextEditingController();
@@ -63,6 +65,7 @@ class _SignupScreenState extends State<SignupScreen> {
         FirebaseDatabase.instance.ref().child('users').child(userFirebase!.uid);
 
     Map userDataMap = {
+      'username': userNameTextEditingController.text.trim(),
       'email': emailTextEditingController.text.trim(),
       'phone': phoneTextEditingController.text.trim(),
       'uid': userFirebase.uid,
@@ -97,16 +100,16 @@ class _SignupScreenState extends State<SignupScreen> {
                 padding: const EdgeInsets.all(5),
                 child: Column(
                   children: [
-                    // TextField(
-                    //   controller: usernameTextEditingController,
-                    //   keyboardType: TextInputType.emailAddress,
-                    //   decoration: InputDecoration(
-                    //       labelText: ' username',
-                    //       labelStyle: Theme.of(context).textTheme.bodyLarge),
-                    // ),
-                    // const SizedBox(
-                    //   height: 22,
-                    // ),
+                    TextField(
+                      controller: userNameTextEditingController,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                          labelText: ' username',
+                          labelStyle: Theme.of(context).textTheme.bodyLarge),
+                    ),
+                    const SizedBox(
+                      height: 22,
+                    ),
                     TextField(
                       controller: emailTextEditingController,
                       keyboardType: TextInputType.emailAddress,

@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "default": "cccc-4b8a5"
+  },
+  "targets": {
+    "cccc-4b8a5": {
+      "functions": {
+        "source": "flutter_stripe"
+      }
+    }
+  }
+}
