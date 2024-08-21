@@ -8,5 +8,11 @@
         "source": "flutter_stripe"
       }
     }
-  }
+  },
+  "etags": {
+    "cccc-4b8a5": {
+      "extensionInstances": {}
+    }
+  },
+  "dataconnectEmulatorConfig": {}
 }

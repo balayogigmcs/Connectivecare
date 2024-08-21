@@ -9,6 +9,7 @@ import 'package:cccc/checkout/constants.dart';
 
 class Server {
   Future<String> createCheckout(double amount,String successUrl) async {
+    print("entered into createCheckout in server stub");
     final auth = 'Basic ' + base64Encode(utf8.encode('$secretKey:'));
 
     // Convert the amount to cents as Stripe expects amounts in the smallest currency unit.

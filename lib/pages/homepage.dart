@@ -36,7 +36,6 @@ import 'package:cccc/widgets/info_dialog.dart';
 import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
 
-
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
 
@@ -109,7 +108,7 @@ class _HomepageState extends State<Homepage> {
 
       LatLng positionOfUserInLatLng = LatLng(
           currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
-          print(positionOfUserInLatLng);
+      print(positionOfUserInLatLng);
 
       CameraPosition cameraPosition =
           CameraPosition(target: positionOfUserInLatLng, zoom: 15);
@@ -360,7 +359,11 @@ class _HomepageState extends State<Homepage> {
   cancelRideRequest() {
     //remove ride request from database
     print("in cancel Ride request");
-    tripRequestRef!.remove();
+    if (tripRequestRef != null) {
+      tripRequestRef!.remove();
+    } else {
+      print("tripRequest not found");
+    }
     print("cancelRideRequest");
 
     setState(() {
@@ -424,8 +427,7 @@ class _HomepageState extends State<Homepage> {
   //     rethrow;
   //   }
   // }
- // Import the service that handles platform-specific logic
-
+  // Import the service that handles platform-specific logic
 
   // void handlePayment(String amount) async {
   //   try {
@@ -446,19 +448,45 @@ class _HomepageState extends State<Homepage> {
   //   }
   // }
 
+  void presentPaymentSheet() async {
+    if (mounted) {
+      try {
+        // Calculate the fare amount (assuming it's in dollars)
+        double c = cMethods.calculateFareAmount(tripDirectionDetailsInfo!);
 
+        // Convert the amount to cents and ensure it's an integer
+        double amountInCents = c; // Multiply by 100 to get cents
 
-  Future<void> presentPaymentSheet() async {
-    try {
-     
-      displayRequestContainer();
-    } catch (e) {
-      scaffoldMessengerKey.currentState?.showSnackBar(
-        SnackBar(
-          content: Text('Payment Failed: $e'),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+        // // Check if the amountInCents is correct
+        // print("Amount in Cents: $amountInCents");
+
+        // // Convert to string for Stripe API if needed
+        // String amount = amountInCents.toString();
+
+        // Pass the amount to the checkout process
+        print("before redirect to checkout");
+        await redirectToCheckout(
+            context, amountInCents, displayRequestContainer);
+        availableNearbyOnlineDriversList =
+            ManageDriversMethod.nearbyOnlineDriversList;
+        print(availableNearbyOnlineDriversList);
+        print("ManageDriversMethod1");
+
+        // Search for a driver
+        searchDriver();
+        print(searchDriver);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Payment Failed: $e'),
+              backgroundColor: Colors.redAccent,
+            ),
+          );
+        }
+      }
+    } else {
+      print("Context is not mounted. Skipping redirectToCheckout.");
     }
   }
 
@@ -734,35 +762,47 @@ class _HomepageState extends State<Homepage> {
 
       if ((eventSnapshot.snapshot.value as Map)["driverLocation"] != null) {
         try {
-          double driverLatitude = double.parse((eventSnapshot.snapshot.value
-                  as Map)["driverLocation"]["latitude"]
-              .toString());
-          print(driverLatitude);
-          double driverLongitude = double.parse((eventSnapshot.snapshot.value
-                  as Map)["driverLocation"]["longitude"]
-              .toString());
-          print(driverLongitude);
+          var latValue = (eventSnapshot.snapshot.value as Map)["driverLocation"]
+              ["latitude"];
+          var lngValue = (eventSnapshot.snapshot.value as Map)["driverLocation"]
+              ["longitude"];
+
+          double driverLatitude =
+              0.0; // Declare the variable with a default value
+          double driverLongitude =
+              0.0; // Declare the variable with a default value
+
+          if (latValue != null && latValue is String) {
+            driverLatitude = double.parse(latValue);
+            print(driverLatitude);
+          }
+
+          if (lngValue != null && lngValue is String) {
+            driverLongitude = double.parse(lngValue);
+            print(driverLongitude);
+          }
+
           LatLng driverCurrentLocationLatLng =
               LatLng(driverLatitude, driverLongitude);
 
           if (status == "accepted") {
-            //update info for pickup to user on UI
-            //info from driver current location to user pickup location
+            // Update info for pickup to user on UI
+            // Info from driver current location to user pickup location
             updateFromDriverCurrentLocationToPickUp(
                 driverCurrentLocationLatLng);
           } else if (status == "arrived") {
-            //update info for arrived - when driver reach at the pickup point of user
+            // Update info for arrived - when driver reach at the pickup point of user
             setState(() {
               tripStatusDisplay = 'Driver has Arrived';
             });
           } else if (status == "ontrip") {
-            //update info for dropoff to user on UI
-            //info from driver current location to user dropoff location
+            // Update info for dropoff to user on UI
+            // Info from driver current location to user dropoff location
             updateFromDriverCurrentLocationToDropOffDestination(
                 driverCurrentLocationLatLng);
           }
         } on Exception catch (e) {
-          print("error : $e");
+          print("Error: $e");
         }
       }
 
@@ -889,83 +929,86 @@ class _HomepageState extends State<Homepage> {
   }
 
   sendNotificationToDriver(OnlineNearbyDrivers currentDriver) {
-    if (tripDirectionDetailsInfo != null) {
-      //update driver's newTripStatus - assign tripID to current driver
-      DatabaseReference currentDriverRef = FirebaseDatabase.instance
-          .ref()
-          .child("drivers")
-          .child(currentDriver.uidDriver.toString())
-          .child("newTripStatus");
+    if (tripDirectionDetailsInfo == null ||
+        currentDriver.uidDriver == null ||
+        tripRequestRef == null) {
+      print(
+          "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is null");
+      return;
+    }
 
-      print(tripRequestRef);
-      print("newTripStatus assigned");
+    // Update driver's newTripStatus - assign tripID to current driver
+    DatabaseReference currentDriverRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString())
+        .child("newTripStatus");
 
-      currentDriverRef.set(tripRequestRef!.key);
-      print("tripRequestRef formed");
-
-      //get current driver device recognition token
+    currentDriverRef.set(tripRequestRef!.key).then((_) {
+      // Get current driver device recognition token
       DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
           .ref()
           .child("drivers")
           .child(currentDriver.uidDriver.toString())
           .child("deviceToken");
-      print(tokenOfCurrentDriverRef);
 
       tokenOfCurrentDriverRef.once().then((dataSnapshot) {
         if (dataSnapshot.snapshot.value != null) {
           String deviceToken = dataSnapshot.snapshot.value.toString();
           print("Device Token: $deviceToken");
 
-          //send notification
+          // Send notification
           PushNotificationService.sendNotificationToSelectedDriver(
               deviceToken, context, tripRequestRef!.key.toString());
-          print("sendNotification2");
+
+          // Handle the timeout logic and other status updates
+          handleDriverResponseTimeout(currentDriverRef);
         } else {
-          print("no token found");
+          print("No token found for driver");
           return;
         }
-
-        const oneTickPerSec = Duration(seconds: 1);
-
-        Timer.periodic(oneTickPerSec, (timer) {
-          requestTimeoutDriver = requestTimeoutDriver - 1;
-
-          //when trip request is not requesting means trip request cancelled - stop timer
-          if (stateOfApp != "requesting") {
-            timer.cancel();
-            currentDriverRef.set("cancelled");
-            currentDriverRef.onDisconnect();
-            requestTimeoutDriver = 20;
-            print("sendNotification3");
-          }
-
-          //when trip request is accepted by online nearest available driver
-          currentDriverRef.onValue.listen((dataSnapshot) {
-            if (dataSnapshot.snapshot.value.toString() == "accepted") {
-              timer.cancel();
-              currentDriverRef.onDisconnect();
-              requestTimeoutDriver = 20;
-              print("sendNotification4");
-            }
-          });
-
-          //if 20 seconds passed - send notification to next nearest online available driver
-          if (requestTimeoutDriver == 0) {
-            currentDriverRef.set("timeout");
-            timer.cancel();
-            currentDriverRef.onDisconnect();
-            requestTimeoutDriver = 20;
-            print("sendNotification5");
-
-            //send notification to next nearest online available driver
-            searchDriver();
-            print("searchDriver2");
-          }
-        });
+      }).catchError((error) {
+        print("Error fetching device token: $error");
       });
-    } else {
-      print("tripDirectionDetailsInfo is null");
-    }
+    }).catchError((error) {
+      print("Error updating driver's newTripStatus: $error");
+    });
+  }
+
+  void handleDriverResponseTimeout(DatabaseReference currentDriverRef) {
+    const oneTickPerSec = Duration(seconds: 1);
+
+    Timer.periodic(oneTickPerSec, (timer) {
+      requestTimeoutDriver = requestTimeoutDriver - 1;
+
+      if (stateOfApp != "requesting") {
+        timer.cancel();
+        currentDriverRef.set("cancelled");
+        currentDriverRef.onDisconnect();
+        requestTimeoutDriver = 20;
+        print("Trip request cancelled by user.");
+        return;
+      }
+
+      currentDriverRef.onValue.listen((dataSnapshot) {
+        if (dataSnapshot.snapshot.value.toString() == "accepted") {
+          timer.cancel();
+          currentDriverRef.onDisconnect();
+          requestTimeoutDriver = 20;
+          print("Trip request accepted by driver.");
+        }
+      });
+
+      if (requestTimeoutDriver == 0) {
+        timer.cancel();
+        currentDriverRef.set("timeout");
+        currentDriverRef.onDisconnect();
+        requestTimeoutDriver = 20;
+
+        // Send notification to the next nearest available driver
+        searchDriver();
+      }
+    });
   }
 
   @override
@@ -974,8 +1017,7 @@ class _HomepageState extends State<Homepage> {
 
     return Scaffold(
       key: sKey,
-      drawer: 
-      Container(
+      drawer: Container(
         width: 255,
         color: Colors.white,
         child: Drawer(
@@ -1137,9 +1179,7 @@ class _HomepageState extends State<Homepage> {
             ],
           ),
         ),
-     
       ),
-     
       body: Stack(
         children: [
           ///google map
@@ -1164,8 +1204,6 @@ class _HomepageState extends State<Homepage> {
               print("before getcurrentlivelocationofuser");
               getCurrentLiveLocationOfUser();
               print("after getcurrentlivelocationofuser");
-
-              
             },
           ),
 
@@ -1382,21 +1420,27 @@ class _HomepageState extends State<Homepage> {
                                           onFormSubmitted: () async {
                                             // Continue the remaining code after form submission
                                             // displayRequestContainer();
-                                            double c =
-                                                cMethods.calculateFareAmount(
-                                                    tripDirectionDetailsInfo!);
-                                            // Ensure amount is a valid integer in cents
-                                            int amountInCents =
-                                                (c * 0.01).round();
-                                            String amount =
-                                                amountInCents.toString();
-                                               final finalAmount = double.parse(amount);
-                                                print("before redirect to checkout");
-                                                 redirectToCheckout(context, finalAmount);
-                                                print("after redirect to checkout");
-                                              //  await initPaymentSheetWeb(amount);
-                                                 await presentPaymentSheet();
-                                                
+                                            // double c =
+                                            //     cMethods.calculateFareAmount(
+                                            //         tripDirectionDetailsInfo!);
+                                            // // Ensure amount is a valid integer in cents
+                                            // int amountInCents =
+                                            //     (c * 0.01).round();
+                                            // String amount =
+                                            //     amountInCents.toString();
+                                            // final finalAmount =
+                                            //     double.parse(amount);
+                                            // print(
+                                            //     "before redirect to checkout");
+                                            // redirectToCheckout(
+                                            //     context, finalAmount);
+                                            // print("after redirect to checkout");
+                                            //  await initPaymentSheetWeb(amount);
+                                            print(
+                                                "before present payment sheet");
+                                             presentPaymentSheet();
+                                            print("after payment sheet");
+
                                             // if(!kIsWeb){
                                             // await initPaymentSheet(amount);
                                             // await presentPaymentSheet();
@@ -1406,16 +1450,6 @@ class _HomepageState extends State<Homepage> {
                                             //   await presentPaymentSheet();
                                             // }
                                             // audioPlayer.open(Audio("assets/audio/alert_sound.mp3"));
-                                            availableNearbyOnlineDriversList =
-                                                ManageDriversMethod
-                                                    .nearbyOnlineDriversList;
-                                            print(
-                                                availableNearbyOnlineDriversList);
-                                            print("ManageDriversMethod1");
-
-                                            // Search for a driver
-                                            searchDriver();
-                                            print(searchDriver);
                                           },
                                         ),
                                       ),
