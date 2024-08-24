@@ -1,3 +1,5 @@
+import 'package:cccc/checkout/stripe_checkout_web.dart';
+import 'package:cccc/pages/homepage.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +10,8 @@ import 'package:provider/provider.dart';
 import 'package:cccc/animation/splash_screen.dart';
 import 'package:cccc/appinfo/appinfo.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' as flutter_stripe;
+import 'dart:html' as html;
 
 final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
     GlobalKey<ScaffoldMessengerState>();
@@ -34,11 +37,11 @@ Future<void> main() async {
       print('Firebase initialized for web.');
 
       // Stripe initialization for web
-      Stripe.publishableKey = dotenv.env["STRIPE_PUBLISH_KEY"]!;
-      print(Stripe.publishableKey);
-      Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
-      Stripe.urlScheme = 'flutterstripe';
-      await Stripe.instance.applySettings();
+      flutter_stripe.Stripe.publishableKey = dotenv.env["STRIPE_PUBLISH_KEY"]!;
+      print(flutter_stripe.Stripe.publishableKey);
+      flutter_stripe.Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
+      flutter_stripe.Stripe.urlScheme = 'flutterstripe';
+      await flutter_stripe.Stripe.instance.applySettings();
 
       // Request notification and location permissions for web
       await requestNotificationPermissionWeb();
@@ -48,11 +51,11 @@ Future<void> main() async {
       print('Firebase initialized for mobile.');
 
       // Stripe initialization for mobile
-      Stripe.publishableKey = dotenv.env["STRIPE_PUBLISH_KEY"]!;
-      print(Stripe.publishableKey);
-      Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
-      Stripe.urlScheme = 'flutterstripe';
-      await Stripe.instance.applySettings();
+      flutter_stripe.Stripe.publishableKey = dotenv.env["STRIPE_PUBLISH_KEY"]!;
+      print(flutter_stripe.Stripe.publishableKey);
+      flutter_stripe.Stripe.merchantIdentifier = 'merchant.flutter.stripe.test';
+      flutter_stripe.Stripe.urlScheme = 'flutterstripe';
+      await flutter_stripe.Stripe.instance.applySettings();
 
       // Request location permission for mobile
       if (await Permission.locationWhenInUse.isDenied) {
@@ -67,42 +70,50 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
-// Function to request notification permission on the web
-Future<void> requestNotificationPermissionWeb() async {
-  FirebaseMessaging messaging = FirebaseMessaging.instance;
-
-  await messaging.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-}
-
-// Function to request location permission on the web using the Geolocator package
-Future<void> requestLocationPermissionWeb() async {
-  LocationPermission permission = await Geolocator.checkPermission();
-
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) {
-      print('Location permission denied');
-      return;
-    }
-  }
-
-  if (permission == LocationPermission.deniedForever) {
-    print('Location permissions are permanently denied');
-    return;
-  }
-
-  if (permission == LocationPermission.whileInUse ||
-      permission == LocationPermission.always) {
-    print('Location permission granted');
-  }
-}
-
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Widget? initialScreen;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Check for pending payment in initState
+    final String? sessionId = html.window.localStorage['sessionId'];
+    print("sessionId : $sessionId");
+    final String? paymentStatus = html.window.localStorage['paymentStatus'];
+    print("paymentStatus : $paymentStatus");
+    final String? previousScreen = html.window.localStorage['previousScreen'];
+    print("previousScreen : $previousScreen");
+
+    if (sessionId != null && paymentStatus == 'pending' && previousScreen == 'home') {
+      // If there is a pending payment, skip the splash screen and go directly to HomePage
+      print("entered ");
+      initialScreen = Homepage(
+        // onPaymentComplete: () async {
+        //   await listenForPaymentCompletion(sessionId);
+        //   print("onPaymentComplete");
+
+        //   html.window.localStorage.remove('sessionId');
+        //   html.window.localStorage.remove('paymentStatus');
+        //   html.window.localStorage.remove('previousScreen');
+
+        // },
+      );
+    } else {
+      // Otherwise, show the SplashScreen
+      initialScreen = SplashScreen();
+    }
+
+    // Update the state to reflect the chosen initial screen
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -148,10 +159,7 @@ class MyApp extends StatelessWidget {
               ),
             ),
             themeMode: appInfo.themeMode,
-            routes: {
-              '/success': (_) => SuccessPage(),
-            },
-            home: SplashScreen(),
+            home: initialScreen ?? CircularProgressIndicator(), // Show a loading indicator if the initialScreen is not yet determined
           );
         },
       ),
@@ -160,19 +168,54 @@ class MyApp extends StatelessWidget {
 }
 
 
-class SuccessPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Text(
-          'Success',
-          style: Theme.of(context).textTheme.headlineLarge,
-        ),
-      ),
-    );
+Future<void> requestNotificationPermissionWeb() async {
+  FirebaseMessaging messaging = FirebaseMessaging.instance;
+
+  await messaging.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+}
+
+// Function to request location permission on the web using the Geolocator package
+Future<void> requestLocationPermissionWeb() async {
+  LocationPermission permission = await Geolocator.checkPermission();
+
+  if (permission == LocationPermission.denied) {
+    permission = await Geolocator.requestPermission();
+    if (permission == LocationPermission.denied) {
+      print('Location permission denied');
+      return;
+    }
+  }
+
+  if (permission == LocationPermission.deniedForever) {
+    print('Location permissions are permanently denied');
+    return;
+  }
+
+  if (permission == LocationPermission.whileInUse ||
+      permission == LocationPermission.always) {
+    print('Location permission granted');
   }
 }
+
+
+
+// class SuccessPage extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       body: Center(
+//         child: Text(
+//           'Success',
+//           style: Theme.of(context).textTheme.headlineLarge,
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 // // import 'package:flutter/material.dart';
 // // import 'package:flutter_form_builder/flutter_form_builder.dart';

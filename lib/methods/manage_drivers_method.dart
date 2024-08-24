@@ -32,8 +32,4 @@ class ManageDriversMethod {
       nearbyOnlineDriversList.add(nearbyOnlineDriversInformation);
     }
   }
-
-  
-
-
 }

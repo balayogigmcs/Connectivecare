@@ -2,12 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:html' as html;
 
 import 'package:cccc/checkout/stripe_checkout_web.dart';
 import 'package:cccc/forms/mobility_aids.dart';
 import 'package:cccc/pages/main_page.dart';
 import 'package:cccc/pages/personal_details_page.dart';
-import 'package:cccc/payment/payment_web.dart';
+// import 'package:cccc/payment/payment_web.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/foundation.dart';
@@ -15,7 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:flutter_stripe/flutter_stripe.dart';
+// import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -35,6 +36,9 @@ import 'package:cccc/pages/trip_history_page.dart';
 import 'package:cccc/widgets/info_dialog.dart';
 import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../models/locations.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -43,7 +47,7 @@ class Homepage extends StatefulWidget {
   State<Homepage> createState() => _HomepageState();
 }
 
-class _HomepageState extends State<Homepage> {
+class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   final Completer<GoogleMapController> googleMapCompleterController =
       Completer<GoogleMapController>();
   GoogleMapController? controllerGoogleMap;
@@ -68,9 +72,299 @@ class _HomepageState extends State<Homepage> {
   List<OnlineNearbyDrivers>? availableNearbyOnlineDriversList;
   StreamSubscription<DatabaseEvent>? tripStreamSubscription;
   bool requestingDirectionDetailsInfo = false;
+  bool paymentPending = false;
 
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
+
+  @override
+  void initState() {
+    super.initState();
+    //   // print("_isPaymentPending called");
+    //   // _isPaymentPending();
+    //   if (widget.onPaymentComplete != null) {
+    //     widget.onPaymentComplete!().then((_) {
+    //       // Handle post-payment logic here
+    //       // For example, showing a confirmation message or updating the UI
+    //       ScaffoldMessenger.of(context).showSnackBar(
+    //         SnackBar(content: Text('Payment completed successfully!')),
+    //       );
+    //     }).catchError((error) {
+    //       // Handle any errors that occurred during the payment process
+    //       ScaffoldMessenger.of(context).showSnackBar(
+    //         SnackBar(content: Text('Payment failed or was not completed.')),
+    //       );
+    //     });
+    //   print("__handlePaymentCompletion called");
+    //   _handlePaymentCompletion();
+    // }
+    WidgetsBinding.instance.addObserver(this);
+    final String? sessionId = html.window.localStorage['sessionId'];
+    final String? paymentStatus = html.window.localStorage['paymentStatus'];
+    print("initState called");
+    if (sessionId != null && paymentStatus == 'pending') {
+      print("restoreStateAfterRestart is called");
+      restoreStateAfterRestart();
+      _checkPaymentStatus();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      // saveStateBeforeRedirect();
+    }
+  }
+
+  Future<void> _checkPaymentStatus() async {
+    final String? sessionId = html.window.localStorage['sessionId'];
+    print(sessionId);
+    final String? paymentStatus = html.window.localStorage['paymentStatus'];
+    print(paymentStatus);
+
+    if (sessionId != null && paymentStatus == 'pending') {
+      paymentPending = true;
+      await Future.delayed(Duration(seconds: 10));
+      final decision = await listenForPaymentCompletion(sessionId);
+      if (decision == "Payment completed successfully") {
+        handlePaymentAndRedirect();
+
+        html.window.localStorage.remove('sessionId');
+        print("remove sessionId");
+        html.window.localStorage.remove('paymentStatus');
+        html.window.localStorage.remove('previousScreen');
+      }
+    }
+  }
+
+  Future<String> listenForPaymentCompletion(String? sessionId) async {
+    print("Entered into listenForPaymentCompletion in stripe_Checkout_web");
+
+    try {
+      // Capture the subscription and listen for the event
+      final event = await FirebaseDatabase.instance
+          .ref('payments/$sessionId')
+          .onValue
+          .firstWhere((DatabaseEvent event) {
+        // Safely casting the data to the desired type
+        final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+        print("Listener triggered for sessionId: $sessionId");
+        print("Snapshot data: $data");
+
+        return data['status'] == 'completed';
+      }).timeout(Duration(minutes: 2), onTimeout: () {
+        // Handle timeout
+        print("Payment confirmation timed out.");
+        throw Exception("Payment confirmation timed out.");
+      });
+
+      // If the condition is met, return a success message
+      print("Payment completed. Returning success message.");
+      return "Payment completed successfully";
+    } catch (e) {
+      print("Error in collecting data: $e");
+      throw e; // Rethrow the caught error
+    }
+  }
+
+// Future<void> _resumePaymentProcess(String sessionId) async {
+  //   print("Resuming payment process for sessionId: $sessionId");
+  //   await listenForPaymentCompletion(sessionId);
+
+  //   html.window.localStorage.remove('sessionId');
+  //   html.window.localStorage.remove('paymentStatus');
+  //   html.window.localStorage.remove('previousScreen');
+
+  //   _handlePaymentCompletion();
+  // }
+
+  Location? pickUpLocation;
+  Location? dropOffDestinationLocation;
+
+  void saveStateBeforeRedirect() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Store user position and map state
+    prefs.setDouble('userLatitude', currentPositionOfUser?.latitude ?? 0.0);
+    prefs.setDouble('userLongitude', currentPositionOfUser?.longitude ?? 0.0);
+    print(
+        "Saved user position: Latitude = ${currentPositionOfUser?.latitude}, Longitude = ${currentPositionOfUser?.longitude}");
+
+    // Store trip details
+    prefs.setString('tripRequestKey', tripRequestRef?.key ?? '');
+    prefs.setString('status', status ?? '');
+    prefs.setString('stateOfApp', stateOfApp ?? '');
+    print(
+        "Saved trip details: tripRequestKey = ${tripRequestRef?.key}, status = $status, stateOfApp = $stateOfApp");
+
+    // Store pickup and dropoff locations
+    if (pickUpLocation != null) {
+      prefs.setString('pickupPlaceName', pickUpLocation?.placeName ?? '');
+      prefs.setDouble('pickupLatitude', pickUpLocation?.latitudePositon ?? 0.0);
+      prefs.setDouble(
+          'pickupLongitude', pickUpLocation?.longitudePosition ?? 0.0);
+      print(
+          "Saved pickup location: Place Name = ${pickUpLocation?.placeName}, Latitude = ${pickUpLocation?.latitudePositon}, Longitude = ${pickUpLocation?.longitudePosition}");
+    }
+
+    if (dropOffDestinationLocation != null) {
+      prefs.setString(
+          'dropoffPlaceName', dropOffDestinationLocation?.placeName ?? '');
+      prefs.setDouble('dropoffLatitude',
+          dropOffDestinationLocation?.latitudePositon ?? 0.0);
+      prefs.setDouble('dropoffLongitude',
+          dropOffDestinationLocation?.longitudePosition ?? 0.0);
+      print(
+          "Saved dropoff location: Place Name = ${dropOffDestinationLocation?.placeName}, Latitude = ${dropOffDestinationLocation?.latitudePositon}, Longitude = ${dropOffDestinationLocation?.longitudePosition}");
+    }
+
+    // Store driver details
+    prefs.setString('driverName', nameDriver ?? '');
+    prefs.setString('driverPhoto', photoDriver ?? '');
+    prefs.setString('driverPhone', phoneNumberDriver ?? '');
+    prefs.setString('carDetails', carDetialsDriver ?? '');
+    print(
+        "Saved driver details: Name = $nameDriver, Photo = $photoDriver, Phone = $phoneNumberDriver, Car Details = $carDetialsDriver");
+
+    // Store trip direction details
+    prefs.setString(
+        'tripDistance', tripDirectionDetailsInfo?.distanceTextString ?? '');
+    prefs.setString(
+        'tripDuration', tripDirectionDetailsInfo?.durationTextString ?? '');
+    print(
+        "Saved trip direction details: Distance = ${tripDirectionDetailsInfo?.distanceTextString}, Duration = ${tripDirectionDetailsInfo?.durationTextString}");
+
+    // Store UI state
+    prefs.setDouble('searchContainerHeight', searchContainerHeight);
+    prefs.setDouble('bottomMapPadding', bottomMapPadding);
+    prefs.setDouble('rideDetailsContainerHeight', rideDetailsContainerHeight);
+    prefs.setDouble('requestContainerHeight', requestContainerHeight);
+    prefs.setDouble('tripContainerHeight', tripContainerHeight);
+    print(
+        "Saved UI state: searchContainerHeight = $searchContainerHeight, bottomMapPadding = $bottomMapPadding, rideDetailsContainerHeight = $rideDetailsContainerHeight, requestContainerHeight = $requestContainerHeight, tripContainerHeight = $tripContainerHeight");
+
+    // Store GeoFire state
+    prefs.setBool(
+        'nearbyOnlineDriversKeysLoaded', nearbyOnlineDriversKeysLoaded);
+    if (availableNearbyOnlineDriversList != null) {
+      prefs.setString(
+          'availableNearbyOnlineDriversList',
+          jsonEncode(availableNearbyOnlineDriversList!
+              .map((e) => e.toJson())
+              .toList()));
+    } else {
+      prefs.remove('availableNearbyOnlineDriversList');
+    }
+    print(
+        "Saved GeoFire state: nearbyOnlineDriversKeysLoaded = $nearbyOnlineDriversKeysLoaded, availableNearbyOnlineDriversList count = ${availableNearbyOnlineDriversList?.length}");
+  }
+
+  void restoreStateAfterRestart() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Restore user position and map state
+    double latitude = prefs.getDouble('userLatitude') ?? 0.0;
+    double longitude = prefs.getDouble('userLongitude') ?? 0.0;
+    currentPositionOfUser = Position(
+        latitude: latitude,
+        longitude: longitude,
+        timestamp: DateTime.now(),
+        accuracy: 1.0,
+        altitude: 0.0,
+        altitudeAccuracy: 1.0,
+        heading: 0.0,
+        headingAccuracy: 1.0,
+        speed: 0.0,
+        speedAccuracy: 1.0,
+        isMocked: false);
+
+    print(
+        "Restored user position: Latitude = $latitude, Longitude = $longitude");
+
+    // Restore tripRequestKey
+    String? tripKey = prefs.getString('tripRequestKey');
+    if (tripKey != null && tripKey.isNotEmpty) {
+      tripRequestRef =
+          FirebaseDatabase.instance.ref().child("tripRequests").child(tripKey);
+    }
+    print("Restored tripRequestKey: $tripKey");
+
+    // Restore status and state of the app
+    status = prefs.getString('status') ?? '';
+    stateOfApp = prefs.getString('stateOfApp') ?? '';
+    print("Restored status: $status");
+    print("Restored stateOfApp: $stateOfApp");
+
+    // Restore pickup and dropoff locations
+    pickUpLocation = Location(
+      placeName: prefs.getString('pickupPlaceName') ?? '',
+      latitudePositon: prefs.getDouble('pickupLatitude') ?? 0.0,
+      longitudePosition: prefs.getDouble('pickupLongitude') ?? 0.0,
+    );
+    dropOffDestinationLocation = Location(
+      placeName: prefs.getString('dropoffPlaceName') ?? '',
+      latitudePositon: prefs.getDouble('dropoffLatitude') ?? 0.0,
+      longitudePosition: prefs.getDouble('dropoffLongitude') ?? 0.0,
+    );
+    print(
+        "Restored pickup location: ${pickUpLocation?.placeName}, Latitude = ${pickUpLocation?.latitudePositon}, Longitude = ${pickUpLocation?.longitudePosition}");
+    print(
+        "Restored dropoff location: ${dropOffDestinationLocation?.placeName}, Latitude = ${dropOffDestinationLocation?.latitudePositon}, Longitude = ${dropOffDestinationLocation?.longitudePosition}");
+
+    // Restore driver details
+    nameDriver = prefs.getString('driverName') ?? '';
+    photoDriver = prefs.getString('driverPhoto') ?? '';
+    phoneNumberDriver = prefs.getString('driverPhone') ?? '';
+    carDetialsDriver = prefs.getString('carDetails') ?? '';
+    print(
+        "Restored driver details: Name = $nameDriver, Photo = $photoDriver, Phone = $phoneNumberDriver, Car Details = $carDetialsDriver");
+
+    // Restore trip direction details info
+    tripDirectionDetailsInfo = DirectionDetails(
+      distanceTextString: prefs.getString('tripDistance') ?? '',
+      durationTextString: prefs.getString('tripDuration') ?? '',
+    );
+    print(
+        "Restored trip direction details: Distance = ${tripDirectionDetailsInfo?.distanceTextString}, Duration = ${tripDirectionDetailsInfo?.durationTextString}");
+
+    // Restore UI state
+    setState(() {
+      searchContainerHeight = prefs.getDouble('searchContainerHeight') ?? 276;
+      bottomMapPadding = prefs.getDouble('bottomMapPadding') ?? 0;
+      rideDetailsContainerHeight =
+          prefs.getDouble('rideDetailsContainerHeight') ?? 0;
+      requestContainerHeight = prefs.getDouble('requestContainerHeight') ?? 0;
+      tripContainerHeight = prefs.getDouble('tripContainerHeight') ?? 0;
+    });
+    print(
+        "Restored UI state: searchContainerHeight = $searchContainerHeight, bottomMapPadding = $bottomMapPadding, rideDetailsContainerHeight = $rideDetailsContainerHeight, requestContainerHeight = $requestContainerHeight, tripContainerHeight = $tripContainerHeight");
+
+    // Restore GeoFire state
+    nearbyOnlineDriversKeysLoaded =
+        prefs.getBool('nearbyOnlineDriversKeysLoaded') ?? false;
+    print(
+        "Restored nearbyOnlineDriversKeysLoaded: $nearbyOnlineDriversKeysLoaded");
+
+    // Restore available nearby drivers list
+    String? driversListString =
+        prefs.getString('availableNearbyOnlineDriversList');
+    if (driversListString != null) {
+      List<dynamic> driversListJson = jsonDecode(driversListString);
+      availableNearbyOnlineDriversList = driversListJson
+          .map((data) => OnlineNearbyDrivers.fromJson(data))
+          .toList();
+    } else {
+      availableNearbyOnlineDriversList = [];
+    }
+    print(
+        "Restored availableNearbyOnlineDriversList: ${availableNearbyOnlineDriversList?.length} drivers loaded");
+  }
 
   makeDriverNearbyCarIcon() {
     if (carIconNearbyDriver == null) {
@@ -448,47 +742,59 @@ class _HomepageState extends State<Homepage> {
   //   }
   // }
 
-  void presentPaymentSheet() async {
-    if (mounted) {
-      try {
-        // Calculate the fare amount (assuming it's in dollars)
-        double c = cMethods.calculateFareAmount(tripDirectionDetailsInfo!);
+  // Future<void> presentPaymentSheet() async {
+  //   try {
+  //     await Stripe.instance.presentPaymentSheet();
+  //     scaffoldMessengerKey.currentState?.showSnackBar(
+  //       SnackBar(
+  //         content: Text('Payment Successful'),
+  //         backgroundColor: Colors.green,
+  //       ),
+  //     );
+  //     displayRequestContainer();
+  //   } catch (e) {
+  //     scaffoldMessengerKey.currentState?.showSnackBar(
+  //       SnackBar(
+  //         content: Text('Payment Failed: $e'),
+  //         backgroundColor: Colors.redAccent,
+  //       ),
+  //     );
+  //   }
+  //}
 
-        // Convert the amount to cents and ensure it's an integer
-        double amountInCents = c; // Multiply by 100 to get cents
+  // Future<void> presentPaymentSheet() async {
+  //   if (mounted) {
+  //     try {
+  //       // Calculate the fare amount (assuming it's in dollars)
+  //       double c = cMethods.calculateFareAmount(tripDirectionDetailsInfo!);
 
-        // // Check if the amountInCents is correct
-        // print("Amount in Cents: $amountInCents");
+  //       // Convert the amount to cents and ensure it's an integer
+  //       double amountInCents = c; // Multiply by 100 to get cents
 
-        // // Convert to string for Stripe API if needed
-        // String amount = amountInCents.toString();
+  //       // // Check if the amountInCents is correct
+  //       // print("Amount in Cents: $amountInCents");
 
-        // Pass the amount to the checkout process
-        print("before redirect to checkout");
-        await redirectToCheckout(
-            context, amountInCents, displayRequestContainer);
-        availableNearbyOnlineDriversList =
-            ManageDriversMethod.nearbyOnlineDriversList;
-        print(availableNearbyOnlineDriversList);
-        print("ManageDriversMethod1");
+  //       // // Convert to string for Stripe API if needed
+  //       // String amount = amountInCents.toString();
 
-        // Search for a driver
-        searchDriver();
-        print(searchDriver);
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Payment Failed: $e'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-      }
-    } else {
-      print("Context is not mounted. Skipping redirectToCheckout.");
-    }
-  }
+  //       // Pass the amount to the checkout process
+  //       print("before redirect to checkout");
+  //       await redirectToCheckout(
+  //           context, amountInCents, displayRequestContainer);
+  //     } catch (e) {
+  //       if (mounted) {
+  //         ScaffoldMessenger.of(context).showSnackBar(
+  //           SnackBar(
+  //             content: Text('Payment Failed: $e'),
+  //             backgroundColor: Colors.redAccent,
+  //           ),
+  //         );
+  //       }
+  //     }
+  //   } else {
+  //     print("Context is not mounted. Skipping redirectToCheckout.");
+  //   }
+  // }
 
   displayRequestContainer() {
     print("displayingRequestContainer");
@@ -680,6 +986,108 @@ class _HomepageState extends State<Homepage> {
 
     print('initializeGeoFireListenerWeb completed');
   }
+
+  // bool _isPaymentPending() {
+  //   // Here you would check if a payment is pending. For example:
+  //   final String? sessionId = ""; // Replace with actual sessionId retrieval
+  //   final String? paymentStatus =
+  //       ""; // Replace with actual paymentStatus retrieval
+
+  //   // Example condition: Check if sessionId is not null and paymentStatus is 'pending'
+  //   if (sessionId != null && paymentStatus == 'pending') {
+  //     print("inside isPayment Pending true");
+  //     // Clear the stored state after completion
+  //     html.window.localStorage.remove('sessionId');
+  //     html.window.localStorage.remove('paymentStatus');
+  //     html.window.localStorage.remove('previousScreen');
+  //     return true;
+  //   }
+  //   print("inside isPayment Pending false");
+  //   return false;
+  // }
+
+  Future<void> presentPaymentSheet() async {
+    try {
+      //     await Stripe.instance.presentPaymentSheet();
+      //     scaffoldMessengerKey.currentState?.showSnackBar(
+      //       SnackBar(
+      //         content: Text('Payment Successful'),
+      //         backgroundColor: Colors.green,
+      //       ),
+      //     );
+      displayRequestContainer();
+    } catch (e) {
+      //     scaffoldMessengerKey.currentState?.showSnackBar(
+      //       SnackBar(
+      //         content: Text('Payment Failed: $e'),
+      //         backgroundColor: Colors.redAccent,
+      //       ),
+      //     );
+      //   }
+    }
+  }
+
+  Future<void> handlePaymentAndRedirect() async {
+    print(stateOfApp);
+    try {
+      // Save the current state before redirecting
+      if (!paymentPending) {
+        saveStateBeforeRedirect();
+
+        // Calculate the fare amount
+        double amountInCents =
+            cMethods.calculateFareAmount(tripDirectionDetailsInfo!);
+
+        // Redirect to checkout and get the session ID
+        final sessionId = await redirectToCheckout(context, amountInCents);
+      } else {
+        await presentPaymentSheet();
+        print("after displayRequestContainer");
+        print(nearbyOnlineDriversList);
+        availableNearbyOnlineDriversList =
+            ManageDriversMethod.nearbyOnlineDriversList;
+        print(availableNearbyOnlineDriversList);
+        print("ManageDriversMethod1");
+
+        // Search for a driver
+        searchDriver();
+        print(searchDriver);
+      }
+    } catch (e) {
+      print("Error in handlePaymentAndRedirect: $e");
+    }
+  }
+
+  // void _handlePaymentCompletion() async {
+  //   // if (_isPaymentPending()) {
+  //   try {
+  //     setState(() {
+  //       stateOfApp == "requesting";
+  //     });
+  //     print("before widget.onPaymentComplete!();");
+  //     //  await widget.onPaymentComplete!();
+  //     print("after widget.onPaymentComplete!();");
+  //     // setState(() {
+  //     //   paymentCompleted = true;
+  //     // });
+  //     await presentPaymentSheet();
+  //     print("after displayRequestContainer");
+  //     availableNearbyOnlineDriversList =
+  //         ManageDriversMethod.nearbyOnlineDriversList;
+  //     print(availableNearbyOnlineDriversList);
+  //     print("ManageDriversMethod1");
+
+  //     // Search for a driver
+  //     searchDriver();
+  //     print(searchDriver);
+  //     print("after redirect to checkout");
+  //   } catch (e) {
+  //     print("Error handling payment completion: $e");
+  //   }
+  //   // } else {
+  //   //   print("No pending payment. Skipping payment completion handling.");
+  //   // }
+  // }
 
   makeTripRequest() {
     print("before tripRequestRef");
@@ -1418,6 +1826,79 @@ class _HomepageState extends State<Homepage> {
                                       MaterialPageRoute(
                                         builder: (context) => MobilityAidsPage(
                                           onFormSubmitted: () async {
+                                            handlePaymentAndRedirect();
+                                            // // Save the current state before redirecting to Stripe checkout
+
+                                            // // Calculate the fare amount (assuming it's in dollars)
+                                            // double c =
+                                            //     cMethods.calculateFareAmount(
+                                            //         tripDirectionDetailsInfo!);
+
+                                            // // Convert the amount to cents and ensure it's an integer
+                                            // double amountInCents = c *
+                                            //     100; // Multiply by 100 to get cents
+
+                                            // // Redirect to Stripe Checkout
+                                            // final sessionId =
+                                            //     await redirectToCheckout(
+                                            //         context, amountInCents);
+                                            // if (sessionId != null) {
+                                            //   restoreStateAfterRestart();
+
+                                            //   final String? sessionID = html
+                                            //       .window
+                                            //       .localStorage['sessionId'];
+                                            //   print(sessionId);
+                                            //   final String? paymentStatus =
+                                            //       html.window.localStorage[
+                                            //           'paymentStatus'];
+                                            //   print(paymentStatus);
+
+                                            //   if (sessionID != null &&
+                                            //       paymentStatus == 'pending') {
+                                            //     // Restore state after returning from the Stripe checkout
+
+                                            //     await Future.delayed(
+                                            //         Duration(seconds: 10));
+
+                                            //     // Listen for payment completion
+                                            //     final decision =
+                                            //         await listenForPaymentCompletion(
+                                            //             sessionId);
+
+                                            //     if (decision ==
+                                            //         "Payment completed successfully") {
+                                            //       // Proceed with displaying the request container
+                                            //       displayRequestContainer();
+
+                                            //       // Search for available drivers
+                                            //       availableNearbyOnlineDriversList =
+                                            //           ManageDriversMethod
+                                            //               .nearbyOnlineDriversList;
+                                            //       searchDriver();
+                                            //     }
+                                            //   }
+                                            // }
+                                            // // Navigator.pop(context);
+                                            // Calculate the fare amount (assuming it's in dollars)
+                                            //double c =
+                                            //     cMethods.calculateFareAmount(
+                                            //         tripDirectionDetailsInfo!);
+
+                                            // //       // Convert the amount to cents and ensure it's an integer
+                                            // double amountInCents =
+                                            // c; // Multiply by 100 to get cents
+
+                                            //       // // Check if the amountInCents is correct
+                                            //       // print("Amount in Cents: $amountInCents");
+
+                                            //       // // Convert to string for Stripe API if needed
+                                            //       // String amount = amountInCents.toString();
+
+                                            //       // Pass the amount to the checkout process
+                                            //       print("before redirect to checkout");
+                                            // await redirectToCheckout(
+                                            //     context, amountInCents, displayRequestContainer);
                                             // Continue the remaining code after form submission
                                             // displayRequestContainer();
                                             // double c =
@@ -1432,14 +1913,60 @@ class _HomepageState extends State<Homepage> {
                                             //     double.parse(amount);
                                             // print(
                                             //     "before redirect to checkout");
-                                            // redirectToCheckout(
-                                            //     context, finalAmount);
+                                            // final sessionId =
+                                            //     await redirectToCheckout(
+                                            //         context, amountInCents);
+
+                                            // print(sessionId);
+
+                                            // print("before listenForPaymentCompletion called");
+
+                                            // await listenForPaymentCompletion(sessionId);
+
+                                            // print("after listenForPaymentCompletion called");
+                                            // if (sessionId != null) {
+                                            //   await listenForPaymentCompletion(
+                                            //       sessionId);
+                                            // }
+                                            // if (sessionId != null) {
+                                            //   // If the sessionId is not null, and onPaymentComplete is provided, call it
+                                            //   ScaffoldMessenger.of(context)
+                                            //       .showSnackBar(
+                                            //     SnackBar(
+                                            //         content: Text(
+                                            //             'Payment completed successfully!')),
+                                            //   );
+                                            // }
+
+                                            // displayRequestContainer();
+                                            // availableNearbyOnlineDriversList =
+                                            //     ManageDriversMethod
+                                            //         .nearbyOnlineDriversList;
+                                            // print(
+                                            //     availableNearbyOnlineDriversList);
+                                            // print("ManageDriversMethod1");
+
+                                            // // Search for a driver
+                                            // searchDriver();
+                                            // print(searchDriver);
                                             // print("after redirect to checkout");
+
+                                            // displayRequestContainer();
+                                            //   availableNearbyOnlineDriversList =
+                                            //       ManageDriversMethod
+                                            //           .nearbyOnlineDriversList;
+                                            //   print(
+                                            //       availableNearbyOnlineDriversList);
+                                            //   print("ManageDriversMethod1");
+
+                                            //   // Search for a driver
+                                            //   searchDriver();
+                                            //   print(searchDriver);
                                             //  await initPaymentSheetWeb(amount);
-                                            print(
-                                                "before present payment sheet");
-                                             presentPaymentSheet();
-                                            print("after payment sheet");
+                                            // print(
+                                            //     "before present payment sheet");
+                                            // await presentPaymentSheet();
+                                            // print("after payment sheet");
 
                                             // if(!kIsWeb){
                                             // await initPaymentSheet(amount);
@@ -1519,6 +2046,7 @@ class _HomepageState extends State<Homepage> {
           ),
 
           ///request container
+          // if (paymentCompleted)
           Positioned(
             left: 0,
             right: 0,
@@ -1766,6 +2294,9 @@ class _HomepageState extends State<Homepage> {
     );
   }
 }
+
+
+
 
 
 

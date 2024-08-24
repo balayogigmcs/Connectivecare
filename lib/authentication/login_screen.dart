@@ -84,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
             //         builder: (BuildContext context) => HomepageWeb()));
             // }
             // else{
-               Navigator.push(
+            Navigator.push(
                 context,
                 MaterialPageRoute(
                     builder: (BuildContext context) => Homepage()));
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             MaterialPageRoute(
                                 builder: (context) => SignupScreen()));
                       },
-                      child:  Text(
+                      child: Text(
                         'Don\'t have a account? Register here',
                         style: TextStyle(color: Colors.blue),
                       ),
