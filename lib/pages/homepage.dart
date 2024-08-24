@@ -99,13 +99,13 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     //   _handlePaymentCompletion();
     // }
     WidgetsBinding.instance.addObserver(this);
-    final String? sessionId = html.window.localStorage['sessionId'];
+     final String? sessionId = html.window.localStorage['sessionId'];
     final String? paymentStatus = html.window.localStorage['paymentStatus'];
     print("initState called");
     if (sessionId != null && paymentStatus == 'pending') {
       print("restoreStateAfterRestart is called");
-      restoreStateAfterRestart();
-      _checkPaymentStatus();
+    restoreStateAfterRestart();
+    _checkPaymentStatus();
     }
   }
 
@@ -118,7 +118,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused) {
-      // saveStateBeforeRedirect();
+      saveStateBeforeRedirect();
     }
   }
 
@@ -184,9 +184,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   //   _handlePaymentCompletion();
   // }
 
-  Location? pickUpLocation;
-  Location? dropOffDestinationLocation;
-
   void saveStateBeforeRedirect() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -196,39 +193,45 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Saved user position: Latitude = ${currentPositionOfUser?.latitude}, Longitude = ${currentPositionOfUser?.longitude}");
 
+    // Assuming you use Provider to manage pickup and dropoff locations
+    var pickUpLocation =
+        Provider.of<Appinfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation =
+        Provider.of<Appinfo>(context, listen: false).dropOffLocation;
+
     // Store trip details
     prefs.setString('tripRequestKey', tripRequestRef?.key ?? '');
-    prefs.setString('status', status ?? '');
-    prefs.setString('stateOfApp', stateOfApp ?? '');
+    prefs.setString('status', status);
+    prefs.setString('stateOfApp', stateOfApp);
     print(
         "Saved trip details: tripRequestKey = ${tripRequestRef?.key}, status = $status, stateOfApp = $stateOfApp");
 
     // Store pickup and dropoff locations
     if (pickUpLocation != null) {
-      prefs.setString('pickupPlaceName', pickUpLocation?.placeName ?? '');
-      prefs.setDouble('pickupLatitude', pickUpLocation?.latitudePositon ?? 0.0);
+      prefs.setString('pickupPlaceName', pickUpLocation.placeName ?? '');
+      prefs.setDouble('pickupLatitude', pickUpLocation.latitudePositon ?? 0.0);
       prefs.setDouble(
-          'pickupLongitude', pickUpLocation?.longitudePosition ?? 0.0);
+          'pickupLongitude', pickUpLocation.longitudePosition ?? 0.0);
       print(
-          "Saved pickup location: Place Name = ${pickUpLocation?.placeName}, Latitude = ${pickUpLocation?.latitudePositon}, Longitude = ${pickUpLocation?.longitudePosition}");
+          "Saved pickup location: Place Name = ${pickUpLocation.placeName}, Latitude = ${pickUpLocation.latitudePositon}, Longitude = ${pickUpLocation.longitudePosition}");
     }
 
     if (dropOffDestinationLocation != null) {
       prefs.setString(
-          'dropoffPlaceName', dropOffDestinationLocation?.placeName ?? '');
-      prefs.setDouble('dropoffLatitude',
-          dropOffDestinationLocation?.latitudePositon ?? 0.0);
+          'dropoffPlaceName', dropOffDestinationLocation.placeName ?? '');
+      prefs.setDouble(
+          'dropoffLatitude', dropOffDestinationLocation.latitudePositon ?? 0.0);
       prefs.setDouble('dropoffLongitude',
-          dropOffDestinationLocation?.longitudePosition ?? 0.0);
+          dropOffDestinationLocation.longitudePosition ?? 0.0);
       print(
-          "Saved dropoff location: Place Name = ${dropOffDestinationLocation?.placeName}, Latitude = ${dropOffDestinationLocation?.latitudePositon}, Longitude = ${dropOffDestinationLocation?.longitudePosition}");
+          "Saved dropoff location: Place Name = ${dropOffDestinationLocation.placeName}, Latitude = ${dropOffDestinationLocation.latitudePositon}, Longitude = ${dropOffDestinationLocation.longitudePosition}");
     }
 
     // Store driver details
-    prefs.setString('driverName', nameDriver ?? '');
-    prefs.setString('driverPhoto', photoDriver ?? '');
-    prefs.setString('driverPhone', phoneNumberDriver ?? '');
-    prefs.setString('carDetails', carDetialsDriver ?? '');
+    prefs.setString('driverName', nameDriver);
+    prefs.setString('driverPhoto', photoDriver);
+    prefs.setString('driverPhone', phoneNumberDriver ?? "");
+    prefs.setString('carDetails', carDetialsDriver);
     print(
         "Saved driver details: Name = $nameDriver, Photo = $photoDriver, Phone = $phoneNumberDriver, Car Details = $carDetialsDriver");
 
@@ -252,18 +255,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     // Store GeoFire state
     prefs.setBool(
         'nearbyOnlineDriversKeysLoaded', nearbyOnlineDriversKeysLoaded);
-    if (availableNearbyOnlineDriversList != null) {
-      prefs.setString(
-          'availableNearbyOnlineDriversList',
-          jsonEncode(availableNearbyOnlineDriversList!
-              .map((e) => e.toJson())
-              .toList()));
-    } else {
-      prefs.remove('availableNearbyOnlineDriversList');
-    }
+    prefs.setString('availableNearbyOnlineDriversList',
+        jsonEncode(availableNearbyOnlineDriversList));
     print(
         "Saved GeoFire state: nearbyOnlineDriversKeysLoaded = $nearbyOnlineDriversKeysLoaded, availableNearbyOnlineDriversList count = ${availableNearbyOnlineDriversList?.length}");
   }
+
+  Location? pickUpLocation;
+  Location? dropOffDestinationLocation;
 
   void restoreStateAfterRestart() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -274,14 +273,15 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     currentPositionOfUser = Position(
         latitude: latitude,
         longitude: longitude,
-        timestamp: DateTime.now(),
-        accuracy: 1.0,
-        altitude: 0.0,
-        altitudeAccuracy: 1.0,
-        heading: 0.0,
-        headingAccuracy: 1.0,
-        speed: 0.0,
-        speedAccuracy: 1.0,
+        timestamp: DateTime
+            .now(), // Provide current timestamp or another appropriate value
+        accuracy: 1.0, // Provide a default accuracy value
+        altitude: 0.0, // Provide a default altitude value
+        altitudeAccuracy: 1.0, // Provide a default altitudeAccuracy value
+        heading: 0.0, // Provide a default heading value
+        headingAccuracy: 1.0, // Provide a default headingAccuracy value
+        speed: 0.0, // Provide a default speed value
+        speedAccuracy: 1.0, // Provide a default speedAccuracy value
         isMocked: false);
 
     print(
@@ -326,10 +326,10 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         "Restored driver details: Name = $nameDriver, Photo = $photoDriver, Phone = $phoneNumberDriver, Car Details = $carDetialsDriver");
 
     // Restore trip direction details info
-    tripDirectionDetailsInfo = DirectionDetails(
-      distanceTextString: prefs.getString('tripDistance') ?? '',
-      durationTextString: prefs.getString('tripDuration') ?? '',
-    );
+    tripDirectionDetailsInfo?.distanceTextString =
+        prefs.getString('tripDistance') ?? '';
+    tripDirectionDetailsInfo?.durationTextString =
+        prefs.getString('tripDuration') ?? '';
     print(
         "Restored trip direction details: Distance = ${tripDirectionDetailsInfo?.distanceTextString}, Duration = ${tripDirectionDetailsInfo?.durationTextString}");
 
@@ -352,16 +352,11 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         "Restored nearbyOnlineDriversKeysLoaded: $nearbyOnlineDriversKeysLoaded");
 
     // Restore available nearby drivers list
-    String? driversListString =
-        prefs.getString('availableNearbyOnlineDriversList');
-    if (driversListString != null) {
-      List<dynamic> driversListJson = jsonDecode(driversListString);
-      availableNearbyOnlineDriversList = driversListJson
-          .map((data) => OnlineNearbyDrivers.fromJson(data))
-          .toList();
-    } else {
-      availableNearbyOnlineDriversList = [];
-    }
+    availableNearbyOnlineDriversList =
+        (jsonDecode(prefs.getString('availableNearbyOnlineDriversList') ?? '[]')
+                as List)
+            .map((data) => OnlineNearbyDrivers.fromJson(data))
+            .toList();
     print(
         "Restored availableNearbyOnlineDriversList: ${availableNearbyOnlineDriversList?.length} drivers loaded");
   }
@@ -2294,7 +2289,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     );
   }
 }
-
 
 
 
