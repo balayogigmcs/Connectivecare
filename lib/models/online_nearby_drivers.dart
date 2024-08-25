@@ -1,17 +1,12 @@
-class OnlineNearbyDrivers{
-
+class OnlineNearbyDrivers {
   String? uidDriver;
   double? latDriver;
   double? lngDriver;
 
-  OnlineNearbyDrivers({
-    this.uidDriver,
-    this.latDriver,
-    this.lngDriver
-  });
+  OnlineNearbyDrivers({this.uidDriver, this.latDriver, this.lngDriver});
 
-  // Factory method to create an instance from JSON
   factory OnlineNearbyDrivers.fromJson(Map<String, dynamic> json) {
+    print("Deserializing OnlineNearbyDrivers from JSON: $json");
     return OnlineNearbyDrivers(
       uidDriver: json['uidDriver'],
       latDriver: (json['latDriver'] as num?)?.toDouble(),
@@ -19,12 +14,13 @@ class OnlineNearbyDrivers{
     );
   }
 
-  // Method to convert an instance to JSON
   Map<String, dynamic> toJson() {
-    return {
+    final json = {
       'uidDriver': uidDriver,
       'latDriver': latDriver,
       'lngDriver': lngDriver,
     };
+    print("Serializing OnlineNearbyDrivers to JSON: $json");
+    return json;
   }
 }

@@ -81,7 +81,9 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
       formData?['userID'] = user!.uid;
       formData?['timestamp'] = ServerValue.timestamp;
       formData?['isCurrent'] = true;
-      _database.child('mobilityAids').push().set(formData).then((_) {
+      DatabaseReference ref = _database.child('mobilityAids').push();
+      ref.set(formData).then((_) {
+        print('Form data saved at key: ${ref.key}');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Form submitted successfully!')),
         );

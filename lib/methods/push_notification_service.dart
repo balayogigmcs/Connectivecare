@@ -52,15 +52,19 @@ class PushNotificationService {
 
   static sendNotificationToSelectedDriver(
       String deviceToken, BuildContext context, String tripID) async {
+      print("entered into sendNotification To Selected Driver");
     String pickUpAddress = Provider.of<Appinfo>(context, listen: false)
         .pickUpLocation!
         .placeName
         .toString();
+    print(pickUpAddress);
     String dropOffDestinationAddress =
         Provider.of<Appinfo>(context, listen: false)
             .dropOffLocation!
             .placeName
             .toString();
+
+    print(dropOffDestinationAddress);
 
     final String serverAccessTokenKey = await getAccessToken();
 
