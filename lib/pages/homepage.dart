@@ -12,6 +12,7 @@ import 'package:cccc/pages/personal_details_page.dart';
 // import 'package:cccc/payment/payment_web.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -75,6 +76,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   StreamSubscription<DatabaseEvent>? tripStreamSubscription;
   bool requestingDirectionDetailsInfo = false;
   bool paymentPending = false;
+  bool isAssigningDriver = false;
 
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -91,7 +93,9 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     if (sessionId != null && paymentStatus == 'pending') {
       print("restoreStateAfterRestart is called");
       restoreStateAfterRestart();
+      print("before _checkPaymentStatus");
       _checkPaymentStatus();
+      print("after _checkPaymentStatus");
     }
   }
 
@@ -115,10 +119,18 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(paymentStatus);
 
     if (sessionId != null && paymentStatus == 'pending') {
+      setState(() {
+        isAssigningDriver = true; // Show loading indicator and text
+      });
       paymentPending = true;
-      await Future.delayed(Duration(seconds: 10));
+      await Future.delayed(Duration(seconds: 5));
       final decision = await listenForPaymentCompletion(sessionId);
       if (decision == "Payment completed successfully") {
+        setState(() {
+          isAssigningDriver = false; // Hide loading indicator and text
+        });
+        print("before presentPaymentSheet called");
+        await presentPaymentSheet();
         handlePaymentAndRedirect();
 
         html.window.localStorage.remove('sessionId');
@@ -178,6 +190,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Saved availableNearbyOnlineDriversList: ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
   }
+
+
 
   Future<void> saveStateBeforeRedirect() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -261,6 +275,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         "Saved GeoFire state: nearbyOnlineDriversKeysLoaded = $nearbyOnlineDriversKeysLoaded, availableNearbyOnlineDriversList = ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
   }
 
+  
+
   Location? pickUpLocation;
   Location? dropOffDestinationLocation;
 
@@ -342,15 +358,15 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "tripDirectionDetailsInfo distance = ${tripDirectionDetailsInfo?.durationTextString}");
 
-    // Restore UI state
-    setState(() {
-      searchContainerHeight = prefs.getDouble('searchContainerHeight') ?? 276;
-      bottomMapPadding = prefs.getDouble('bottomMapPadding') ?? 0;
-      rideDetailsContainerHeight =
-          prefs.getDouble('rideDetailsContainerHeight') ?? 0;
-      requestContainerHeight = prefs.getDouble('requestContainerHeight') ?? 0;
-      tripContainerHeight = prefs.getDouble('tripContainerHeight') ?? 0;
-    });
+    // // Restore UI state
+    // setState(() {
+    //   searchContainerHeight = prefs.getDouble('searchContainerHeight') ?? 276;
+    //   bottomMapPadding = prefs.getDouble('bottomMapPadding') ?? 0;
+    //   rideDetailsContainerHeight =
+    //       prefs.getDouble('rideDetailsContainerHeight') ?? 0;
+    //   requestContainerHeight = prefs.getDouble('requestContainerHeight') ?? 0;
+    //   tripContainerHeight = prefs.getDouble('tripContainerHeight') ?? 0;
+    // });
     print(
         "Restored UI state: searchContainerHeight = $searchContainerHeight, bottomMapPadding = $bottomMapPadding, rideDetailsContainerHeight = $rideDetailsContainerHeight, requestContainerHeight = $requestContainerHeight, tripContainerHeight = $tripContainerHeight");
 
@@ -930,8 +946,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         print("after calling redirectToCheckout in handlePayment");
       } else {
         print(paymentPending);
-        print("before presentPaymentSheet called");
-        await presentPaymentSheet();
         print("after displayRequestContainer");
         print(nearbyOnlineDriversList);
         availableNearbyOnlineDriversList =
@@ -1534,6 +1548,31 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             },
           ),
 
+          if (isAssigningDriver) ...[
+            Opacity(
+              opacity: 0.7, // Adjust the opacity as needed
+              child: Container(
+                color: Colors.black, // Black color with opacity
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 20),
+                      Text(
+                        "Finding Near by  Drivers...",
+                        style: TextStyle(
+                          fontSize: 18,
+                          color: Colors.white, // Text color set to white
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+
           ///drawer button
           Positioned(
             top: 36,
@@ -1865,6 +1904,13 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
+                    const SizedBox(
+                      height: 12,
+                    ),
+                    const Text(
+                      "Connecting To Driver.....",
+                      style: TextStyle(color: Colors.blue),
+                    ),
                     const SizedBox(
                       height: 12,
                     ),

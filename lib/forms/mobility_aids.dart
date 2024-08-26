@@ -17,6 +17,7 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   final User? user = FirebaseAuth.instance.currentUser;
+  bool isFormSubmitted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -25,53 +26,92 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
         title: Text('Mobility Aids'),
         backgroundColor: Colors.blueAccent,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              FormBuilder(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle('Type of Mobility Aid:'),
-                    const SizedBox(height: 10,),
-                    _buildHorizontalScroll(
-                      'mobilityAidType',
-                      ['Wheelchair', 'Walker', 'Cane', 'Other mobility aids'],
-                    ),
-                    SizedBox(height: 20),
-                    Center(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          if (_formKey.currentState?.saveAndValidate() ?? false) {
-                            final formData = Map<String, dynamic>.from(
-                                _formKey.currentState?.value ?? {});
-                            _saveFormData(formData);
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blueAccent,
-                          padding: EdgeInsets.symmetric(vertical: 15,horizontal: 20),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10.0),
+      body: Stack(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FormBuilder(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildSectionTitle('Type of Mobility Aid:'),
+                        const SizedBox(
+                          height: 10,
+                        ),
+                        _buildHorizontalScroll(
+                          'mobilityAidType',
+                          [
+                            'Wheelchair',
+                            'Walker',
+                            'Cane',
+                            'Other mobility aids'
+                          ],
+                        ),
+                        SizedBox(height: 20),
+                        Center(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              if (_formKey.currentState?.saveAndValidate() ??
+                                  false) {
+                                final formData = Map<String, dynamic>.from(
+                                    _formKey.currentState?.value ?? {});
+                                _saveFormData(formData);
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueAccent,
+                              padding: EdgeInsets.symmetric(
+                                  vertical: 15, horizontal: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10.0),
+                              ),
+                            ),
+                            child: Text(
+                              'Submit',
+                              style: TextStyle(fontSize: 18),
+                            ),
                           ),
                         ),
-                        child: Text(
-                          'Submit',
-                          style: TextStyle(fontSize: 18),
-                        ),
-                      ),
+                        SizedBox(height: 20),
+                      ],
                     ),
-                    SizedBox(height: 20),
-                  ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (isFormSubmitted) ...[
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.7, // Adjust the opacity as needed
+                child: Container(
+                  color: Colors.black, // Black color with opacity
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 20),
+                        Text(
+                          "Submitting form...",
+                          style: TextStyle(
+                            fontSize: 18,
+                            color: Colors.white, // Text color set to white
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-        ),
+            ),
+          ],
+        ],
       ),
     );
   }
@@ -82,8 +122,12 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
       formData?['timestamp'] = ServerValue.timestamp;
       formData?['isCurrent'] = true;
       DatabaseReference ref = _database.child('mobilityAids').push();
-      ref.set(formData).then((_) {
+      ref.set(formData).then((_) async {
         print('Form data saved at key: ${ref.key}');
+        setState(() {
+          isFormSubmitted = true;
+        });
+        await Future.delayed(Duration(seconds: 3));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Form submitted successfully!')),
         );
@@ -165,6 +209,7 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
     );
   }
 }
+
 
 // import 'package:flutter/material.dart';
 // import 'package:flutter_form_builder/flutter_form_builder.dart';
