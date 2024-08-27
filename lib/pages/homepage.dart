@@ -129,9 +129,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         setState(() {
           isAssigningDriver = false; // Hide loading indicator and text
         });
-        print("before presentPaymentSheet called");
-        await presentPaymentSheet();
-        handlePaymentAndRedirect();
+        await handlePaymentAndRedirect();
 
         html.window.localStorage.remove('sessionId');
         print("remove sessionId");
@@ -190,8 +188,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Saved availableNearbyOnlineDriversList: ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
   }
-
-
 
   Future<void> saveStateBeforeRedirect() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -274,8 +270,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Saved GeoFire state: nearbyOnlineDriversKeysLoaded = $nearbyOnlineDriversKeysLoaded, availableNearbyOnlineDriversList = ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
   }
-
-  
 
   Location? pickUpLocation;
   Location? dropOffDestinationLocation;
@@ -946,6 +940,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         print("after calling redirectToCheckout in handlePayment");
       } else {
         print(paymentPending);
+        print("before presentPaymentSheet called");
+        await presentPaymentSheet();
         print("after displayRequestContainer");
         print(nearbyOnlineDriversList);
         availableNearbyOnlineDriversList =
@@ -1251,7 +1247,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
 
     //send notification to this currentDriver - currentDriver means selected driver
     sendNotificationToDriver(currentDriver);
-    print("sendNotification1");
+    print("after sendNotificationNotificationToDriver");
 
     availableNearbyOnlineDriversList!.removeAt(0);
     print(
@@ -1259,6 +1255,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   }
 
   sendNotificationToDriver(OnlineNearbyDrivers currentDriver) {
+    print("entered into sendNotificationToDriver");
     print(tripDirectionDetailsInfo);
     print(currentDriver.uidDriver);
     print(tripRequestRef);
