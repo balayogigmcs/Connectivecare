@@ -155,6 +155,7 @@ class CommonMethods {
     try {
       print("entered into SendRequestToApi");
       final responseFromAPI = await http.get(Uri.parse(apiUrl));
+      print("responseFromAPI = $responseFromAPI ");
 
       if (responseFromAPI.statusCode == 200) {
         String dataFromApi = responseFromAPI.body;
@@ -285,5 +286,5 @@ class CommonMethods {
   //     print("GoogleMapController is not initialized");
   //   }
   //   }
-  //}
+  // }
 }

@@ -115,9 +115,28 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      // saveStateBeforeRedirect();
+    if (state == AppLifecycleState.resumed) {
+      final String? sessionId = html.window.localStorage['sessionId'];
+      final String? paymentStatus = html.window.localStorage['paymentStatus'];
+      if (sessionId != null && paymentStatus == 'pending') {
+        restoreStateAfterRestart();
+      } else {
+        _initializeMapAndLocation();
+      }
     }
+  }
+
+  void _initializeMapAndLocation() {
+    if (controllerGoogleMap != null) {
+      controllerGoogleMap!.dispose();
+      controllerGoogleMap = null;
+    }
+    googleMapCompleterController.future.then((controller) {
+      controllerGoogleMap = controller;
+      updateMapTheme(controllerGoogleMap!);
+    });
+
+    getCurrentLiveLocationOfUser();
   }
 
   Future<void> _checkPaymentStatus() async {
@@ -440,6 +459,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             .toList();
     print(
         "Restored availableNearbyOnlineDriversList: $availableNearbyOnlineDriversList drivers loaded");
+
+    _initializeMapAndLocation();
   }
 
   makeDriverNearbyCarIcon() {
@@ -883,7 +904,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     return degrees * pi / 180.0;
   }
 
-  initializeGeoFireListenerWeb()async {
+  initializeGeoFireListenerWeb() async {
     if (boolinitializeGeoFireListenerWeb) return;
     print('Starting initializeGeoFireListenerWeb');
 
@@ -1110,6 +1131,11 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             data["driverLocation"]["latitude"]?.toString() ?? "";
         var longitudeString =
             data["driverLocation"]["longitude"]?.toString() ?? "";
+
+        if (latitudeString.isEmpty || longitudeString.isEmpty) {
+          print("Latitude or Longitude is empty or null");
+          return; // Skip this update
+        }
 
         print("Raw Latitude String: '$latitudeString'");
         print("Raw Longitude String: '$longitudeString'");
@@ -2024,28 +2050,28 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                         builder: (context) => MobilityAidsPage(
                                           onFormSubmitted: () async {
                                             Navigator.pop(context);
-                                    print(
-                                        "before handlePaymentAndRedirect called ");
-                                    handlePaymentAndRedirect();
-                                    print(
-                                        "after handlePaymentAndRedirect called ");
-                                    // //   print(paymentPending);
-                                    //   print(
-                                    //       "before presentPaymentSheet called");
-                                    //  presentPaymentSheet();
-                                    // print(
-                                    //     "after displayRequestContainer");
-                                    // print(nearbyOnlineDriversList);
-                                    // availableNearbyOnlineDriversList =
-                                    //     ManageDriversMethod
-                                    //         .nearbyOnlineDriversList;
-                                    // print(
-                                    //     availableNearbyOnlineDriversList);
-                                    // print("ManageDriversMethod1");
+                                            print(
+                                                "before handlePaymentAndRedirect called ");
+                                            handlePaymentAndRedirect();
+                                            print(
+                                                "after handlePaymentAndRedirect called ");
+                                            // //   print(paymentPending);
+                                            //   print(
+                                            //       "before presentPaymentSheet called");
+                                            //  presentPaymentSheet();
+                                            // print(
+                                            //     "after displayRequestContainer");
+                                            // print(nearbyOnlineDriversList);
+                                            // availableNearbyOnlineDriversList =
+                                            //     ManageDriversMethod
+                                            //         .nearbyOnlineDriversList;
+                                            // print(
+                                            //     availableNearbyOnlineDriversList);
+                                            // print("ManageDriversMethod1");
 
-                                    // // Search for a driver
-                                    // searchDriver();
-                                    // print(searchDriver);
+                                            // // Search for a driver
+                                            // searchDriver();
+                                            // print(searchDriver);
                                           },
                                         ),
                                       ),
