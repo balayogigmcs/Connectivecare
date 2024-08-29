@@ -153,6 +153,7 @@ class CommonMethods {
 
   static Future<dynamic> sendRequestToAPI(String apiUrl) async {
     try {
+      print("entered into SendRequestToApi");
       final responseFromAPI = await http.get(Uri.parse(apiUrl));
 
       if (responseFromAPI.statusCode == 200) {
@@ -179,6 +180,7 @@ class CommonMethods {
     var responseFromAPI = await sendRequestToAPI(apiGeoCodingUrl);
 
     if (responseFromAPI != "error") {
+      
       humanReadableAddress = responseFromAPI["results"][0]["formatted_address"];
 
       AddressModel model = AddressModel();
@@ -202,12 +204,15 @@ class CommonMethods {
   ///Directions API
   static Future<DirectionDetails?> getDirectionDetailsFromAPI(
       LatLng source, LatLng destination) async {
+        print("entered into getDirectionDetailsFromApi");
     String urlDirectionsAPI =
         "https://maps.googleapis.com/maps/api/directions/json?destination=${destination.latitude},${destination.longitude}&origin=${source.latitude},${source.longitude}&mode=driving&key=$googleMapKey";
 
+    print(urlDirectionsAPI);
     var responseFromDirectionsAPI = await sendRequestToAPI(urlDirectionsAPI);
 
     if (responseFromDirectionsAPI == "error") {
+      print(" responseFromDirectionsAPI  is error ");
       return null;
     }
 
@@ -215,16 +220,21 @@ class CommonMethods {
 
     detailsModel.distanceTextString =
         responseFromDirectionsAPI["routes"][0]["legs"][0]["distance"]["text"];
+        print(detailsModel.distanceTextString);
     detailsModel.distanceValueDigits =
         responseFromDirectionsAPI["routes"][0]["legs"][0]["distance"]["value"];
+        print(detailsModel.distanceValueDigits);
 
     detailsModel.durationTextString =
         responseFromDirectionsAPI["routes"][0]["legs"][0]["duration"]["text"];
+        print(detailsModel.durationTextString);
     detailsModel.durationValueDigits =
         responseFromDirectionsAPI["routes"][0]["legs"][0]["duration"]["value"];
+        print(detailsModel.durationValueDigits);
 
     detailsModel.encodePoints =
         responseFromDirectionsAPI["routes"][0]["overview_polyline"]["points"];
+        print(detailsModel.encodePoints);
 
     return detailsModel;
   }

@@ -17,7 +17,7 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   final DatabaseReference _database = FirebaseDatabase.instance.ref();
   final User? user = FirebaseAuth.instance.currentUser;
-  bool isFormSubmitted = false;
+  // bool isFormSubmitted = false;
 
   @override
   Widget build(BuildContext context) {
@@ -85,32 +85,32 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
               ),
             ),
           ),
-          if (isFormSubmitted) ...[
-            Positioned.fill(
-              child: Opacity(
-                opacity: 0.7, // Adjust the opacity as needed
-                child: Container(
-                  color: Colors.black, // Black color with opacity
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        CircularProgressIndicator(),
-                        SizedBox(height: 20),
-                        Text(
-                          "Submitting form...",
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.white, // Text color set to white
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
+          //   if (isFormSubmitted) ...[
+          //     Positioned.fill(
+          //       child: Opacity(
+          //         opacity: 0.7, // Adjust the opacity as needed
+          //         child: Container(
+          //           color: Colors.black, // Black color with opacity
+          //           child: const Center(
+          //             child: Column(
+          //               mainAxisAlignment: MainAxisAlignment.center,
+          //               children: [
+          //                 CircularProgressIndicator(),
+          //                 SizedBox(height: 20),
+          //                 Text(
+          //                   "Submitting form...",
+          //                   style: TextStyle(
+          //                     fontSize: 18,
+          //                     color: Colors.white, // Text color set to white
+          //                   ),
+          //                 ),
+          //               ],
+          //             ),
+          //           ),
+          //         ),
+          //       ),
+          //     ),
+          //   ],
         ],
       ),
     );
@@ -124,10 +124,10 @@ class _MobilityAidsPageState extends State<MobilityAidsPage> {
       DatabaseReference ref = _database.child('mobilityAids').push();
       ref.set(formData).then((_) async {
         print('Form data saved at key: ${ref.key}');
-        setState(() {
-          isFormSubmitted = true;
-        });
-        await Future.delayed(Duration(seconds: 3));
+        // setState(() {
+        //   isFormSubmitted = true;
+        // });
+        // await Future.delayed(Duration(seconds: 3));
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Form submitted successfully!')),
         );

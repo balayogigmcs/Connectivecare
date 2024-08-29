@@ -9,7 +9,6 @@ import 'package:cccc/forms/mobility_aids.dart';
 import 'package:cccc/models/address_model.dart';
 import 'package:cccc/pages/main_page.dart';
 import 'package:cccc/pages/personal_details_page.dart';
-// import 'package:cccc/payment/payment_web.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
@@ -19,7 +18,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_geofire/flutter_geofire.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-// import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -40,8 +38,6 @@ import 'package:cccc/widgets/info_dialog.dart';
 import 'package:cccc/appinfo/appinfo.dart';
 import 'package:cccc/widgets/loading_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../models/locations.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
@@ -76,7 +72,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   StreamSubscription<DatabaseEvent>? tripStreamSubscription;
   bool requestingDirectionDetailsInfo = false;
   bool paymentPending = false;
-  bool isAssigningDriver = false;
+  // bool isAssigningDriver = false;
+  bool afterPayment = false;
+  bool boolsaveStateAfterDriverListPopulated = false;
+  bool boolsaveStateBeforeRedirect = false;
+  bool boolgetCurrentLiveLocationOfUser = false;
+  bool boolgetUserInfoAndCheckBlockStatus = false;
+  bool boolinitializeGeoFireListenerWeb = false;
+  StreamSubscription<DatabaseEvent>? geoFireSubscriptionWeb;
 
   final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -91,6 +94,11 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Initial availableNearbyOnlineDriversList count: ${availableNearbyOnlineDriversList?.length}");
     if (sessionId != null && paymentStatus == 'pending') {
+      boolsaveStateAfterDriverListPopulated = true;
+      boolsaveStateBeforeRedirect = true;
+      boolgetCurrentLiveLocationOfUser = true;
+      boolgetUserInfoAndCheckBlockStatus = true;
+      boolinitializeGeoFireListenerWeb = true;
       print("restoreStateAfterRestart is called");
       restoreStateAfterRestart();
       print("before _checkPaymentStatus");
@@ -119,17 +127,17 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(paymentStatus);
 
     if (sessionId != null && paymentStatus == 'pending') {
-      setState(() {
-        isAssigningDriver = true; // Show loading indicator and text
-      });
+      // setState(() {
+      //   isAssigningDriver = true; // Show loading indicator and text
+      // });
       paymentPending = true;
-      await Future.delayed(Duration(seconds: 5));
+      // await Future.delayed(Duration(seconds: 2));
       final decision = await listenForPaymentCompletion(sessionId);
       if (decision == "Payment completed successfully") {
-        setState(() {
-          isAssigningDriver = false; // Hide loading indicator and text
-        });
-        await handlePaymentAndRedirect();
+        // setState(() {
+        //   isAssigningDriver = false; // Hide loading indicator and text
+        // });
+        handlePaymentAndRedirect();
 
         html.window.localStorage.remove('sessionId');
         print("remove sessionId");
@@ -144,7 +152,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
 
     try {
       // Capture the subscription and listen for the event
-      final event = await FirebaseDatabase.instance
+      // final event = await FirebaseDatabase.instance
+      await FirebaseDatabase.instance
           .ref('payments/$sessionId')
           .onValue
           .firstWhere((DatabaseEvent event) {
@@ -169,28 +178,34 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> saveStateAfterDriverListPopulated() async {
-    await Future.delayed(Duration(
-        seconds:
-            3)); // Adjust this duration based on when the list is typically populated
+  // Future<void> saveStateAfterDriverListPopulated() async {
+  //   if (boolsaveStateAfterDriverListPopulated) return;
+  //   await Future.delayed(Duration(
+  //       seconds:
+  //           1)); // Adjust this duration based on when the list is typically populated
 
-    print(
-        "Before saving state in list populated: availableNearbyOnlineDriversList count = ${ManageDriversMethod.nearbyOnlineDriversList.length}");
+  //   print(
+  //       "Before saving state in list populated: availableNearbyOnlineDriversList count = ${ManageDriversMethod.nearbyOnlineDriversList.length}");
 
-    SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    // Save the populated list
-    prefs.setString('availableNearbyOnlineDriversList',
-        jsonEncode(ManageDriversMethod.nearbyOnlineDriversList ?? []));
+  //   // Save the populated list
+  //   prefs.setString('availableNearbyOnlineDriversList',
+  //       jsonEncode(ManageDriversMethod.nearbyOnlineDriversList ?? []));
 
-    print(
-        "Saved GeoFire state in list populated: nearbyOnlineDriversKeysLoaded = true, availableNearbyOnlineDriversList count = ${ManageDriversMethod.nearbyOnlineDriversList.length}");
-    print(
-        "Saved availableNearbyOnlineDriversList: ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
-  }
+  //   print(
+  //       "Saved GeoFire state in list populated: nearbyOnlineDriversKeysLoaded = true, availableNearbyOnlineDriversList count = ${ManageDriversMethod.nearbyOnlineDriversList.length}");
+  //   print(
+  //       "Saved availableNearbyOnlineDriversList: ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
+  // }
 
   Future<void> saveStateBeforeRedirect() async {
+    if (boolsaveStateBeforeRedirect) return;
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    //save userName and userPhone
+    prefs.setString('userName', userName);
+    prefs.setString('userPhone', userPhone);
 
     // Store user position and map state
     prefs.setDouble('userLatitude', currentPositionOfUser?.latitude ?? 0.0);
@@ -198,11 +213,11 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Saved user position: Latitude = ${currentPositionOfUser?.latitude}, Longitude = ${currentPositionOfUser?.longitude}");
 
-    // Assuming you use Provider to manage pickup and dropoff locations
-    var pickUpLocation =
-        Provider.of<Appinfo>(context, listen: false).pickUpLocation;
-    var dropOffDestinationLocation =
-        Provider.of<Appinfo>(context, listen: false).dropOffLocation;
+    // // Assuming you use Provider to manage pickup and dropoff locations
+    // var pickUpLocation =
+    //     Provider.of<Appinfo>(context, listen: false).pickUpLocation;
+    // var dropOffDestinationLocation =
+    //     Provider.of<Appinfo>(context, listen: false).dropOffLocation;
 
     // Store trip details
     prefs.setString('tripRequestKey', tripRequestRef?.key ?? '');
@@ -211,15 +226,19 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Saved trip details: tripRequestKey = ${tripRequestRef?.key}, status = $status, stateOfApp = $stateOfApp");
 
-    // Store pickup and dropoff locations
+    var pickUpLocation =
+        Provider.of<Appinfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation =
+        Provider.of<Appinfo>(context, listen: false).dropOffLocation;
+
     if (pickUpLocation != null) {
       prefs.setString('pickupPlaceName', pickUpLocation.placeName ?? '');
       prefs.setDouble('pickupLatitude', pickUpLocation.latitudePositon ?? 0.0);
       prefs.setDouble(
           'pickupLongitude', pickUpLocation.longitudePosition ?? 0.0);
-      print(
-          "Saved pickup location: Place Name = ${pickUpLocation.placeName}, Latitude = ${pickUpLocation.latitudePositon}, Longitude = ${pickUpLocation.longitudePosition}");
     }
+    print(
+        "pickUpPlaceName : ${pickUpLocation!.placeName}, pickuplat = ${pickUpLocation.latitudePositon},pickuplng = ${pickUpLocation.longitudePosition}");
 
     if (dropOffDestinationLocation != null) {
       prefs.setString(
@@ -228,9 +247,31 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
           'dropoffLatitude', dropOffDestinationLocation.latitudePositon ?? 0.0);
       prefs.setDouble('dropoffLongitude',
           dropOffDestinationLocation.longitudePosition ?? 0.0);
-      print(
-          "Saved dropoff location: Place Name = ${dropOffDestinationLocation.placeName}, Latitude = ${dropOffDestinationLocation.latitudePositon}, Longitude = ${dropOffDestinationLocation.longitudePosition}");
     }
+
+    print(
+        "dropoff Placename = ${dropOffDestinationLocation!.placeName}, dropoffLat = ${dropOffDestinationLocation.latitudePositon}, dropoffLng = ${dropOffDestinationLocation.longitudePosition}");
+
+    // // Store pickup and dropoff locations
+    // if (pickUpLocation != null) {
+    //   prefs.setString('pickupPlaceName', pickUpLocation.placeName ?? '');
+    //   prefs.setDouble('pickupLatitude', pickUpLocation.latitudePositon ?? 0.0);
+    //   prefs.setDouble(
+    //       'pickupLongitude', pickUpLocation.longitudePosition ?? 0.0);
+    //   print(
+    //       "Saved pickup location: Place Name = ${pickUpLocation.placeName}, Latitude = ${pickUpLocation.latitudePositon}, Longitude = ${pickUpLocation.longitudePosition}");
+    // }
+
+    // if (dropOffDestinationLocation != null) {
+    //   prefs.setString(
+    //       'dropoffPlaceName', dropOffDestinationLocation.placeName ?? '');
+    //   prefs.setDouble(
+    //       'dropoffLatitude', dropOffDestinationLocation.latitudePositon ?? 0.0);
+    //   prefs.setDouble('dropoffLongitude',
+    //       dropOffDestinationLocation.longitudePosition ?? 0.0);
+    //   print(
+    //       "Saved dropoff location: Place Name = ${dropOffDestinationLocation.placeName}, Latitude = ${dropOffDestinationLocation.latitudePositon}, Longitude = ${dropOffDestinationLocation.longitudePosition}");
+    // }
 
     // Store driver details
     prefs.setString('driverName', nameDriver);
@@ -261,7 +302,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         "Saved UI state: searchContainerHeight = $searchContainerHeight, bottomMapPadding = $bottomMapPadding, rideDetailsContainerHeight = $rideDetailsContainerHeight, requestContainerHeight = $requestContainerHeight, tripContainerHeight = $tripContainerHeight");
     print(
         "Before saving state in final save: availableNearbyOnlineDriversList count = ${ManageDriversMethod.nearbyOnlineDriversList.length}");
-    await Future.delayed(Duration(seconds: 3));
+    // await Future.delayed(Duration(seconds: 3));
     // Store GeoFire state
     prefs.setBool(
         'nearbyOnlineDriversKeysLoaded', nearbyOnlineDriversKeysLoaded);
@@ -271,11 +312,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         "Saved GeoFire state: nearbyOnlineDriversKeysLoaded = $nearbyOnlineDriversKeysLoaded, availableNearbyOnlineDriversList = ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
   }
 
-  Location? pickUpLocation;
-  Location? dropOffDestinationLocation;
+  // Location? pickUpLocation;
+  // Location? dropOffDestinationLocation;
 
   void restoreStateAfterRestart() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    userName = prefs.getString('userName') ?? "unknown";
+    userPhone = prefs.getString('userPhone') ?? "unknown";
 
     // Restore user position and map state
     double latitude = prefs.getDouble('userLatitude') ?? 0.0;
@@ -311,21 +355,39 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print("Restored status: $status");
     print("Restored stateOfApp: $stateOfApp");
 
-    // Restore pickup and dropoff locations
-    pickUpLocation = Location(
+    // Restore pickup and dropoff locations using AddressModel
+    var appInfo = Provider.of<Appinfo>(context, listen: false);
+    appInfo.updatePickUpLocation(AddressModel(
       placeName: prefs.getString('pickupPlaceName') ?? '',
       latitudePositon: prefs.getDouble('pickupLatitude') ?? 0.0,
       longitudePosition: prefs.getDouble('pickupLongitude') ?? 0.0,
-    );
-    dropOffDestinationLocation = Location(
+    ));
+
+    print("restoration of pickupLocation : ${appInfo.pickUpLocation}");
+
+    appInfo.updateDropOffLocation(AddressModel(
       placeName: prefs.getString('dropoffPlaceName') ?? '',
       latitudePositon: prefs.getDouble('dropoffLatitude') ?? 0.0,
       longitudePosition: prefs.getDouble('dropoffLongitude') ?? 0.0,
-    );
-    print(
-        "Restored pickup location: ${pickUpLocation?.placeName}, Latitude = ${pickUpLocation?.latitudePositon}, Longitude = ${pickUpLocation?.longitudePosition}");
-    print(
-        "Restored dropoff location: ${dropOffDestinationLocation?.placeName}, Latitude = ${dropOffDestinationLocation?.latitudePositon}, Longitude = ${dropOffDestinationLocation?.longitudePosition}");
+    ));
+
+    print("restoration of dropoffLocation : ${appInfo.dropOffLocation}");
+
+    // // Restore pickup and dropoff locations
+    // pickUpLocation = Location(
+    //   placeName: prefs.getString('pickupPlaceName') ?? '',
+    //   latitudePositon: prefs.getDouble('pickupLatitude') ?? 0.0,
+    //   longitudePosition: prefs.getDouble('pickupLongitude') ?? 0.0,
+    // );
+    // dropOffDestinationLocation = Location(
+    //   placeName: prefs.getString('dropoffPlaceName') ?? '',
+    //   latitudePositon: prefs.getDouble('dropoffLatitude') ?? 0.0,
+    //   longitudePosition: prefs.getDouble('dropoffLongitude') ?? 0.0,
+    // );
+    // print(
+    //     "Restored pickup location: ${pickUpLocation?.placeName}, Latitude = ${pickUpLocation?.latitudePositon}, Longitude = ${pickUpLocation?.longitudePosition}");
+    // print(
+    //     "Restored dropoff location: ${dropOffDestinationLocation?.placeName}, Latitude = ${dropOffDestinationLocation?.latitudePositon}, Longitude = ${dropOffDestinationLocation?.longitudePosition}");
 
     // Restore driver details
     nameDriver = prefs.getString('driverName') ?? '';
@@ -409,6 +471,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   }
 
   getCurrentLiveLocationOfUser() async {
+    // if (boolgetCurrentLiveLocationOfUser) return;
     try {
       Position positionOfUser = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high);
@@ -428,7 +491,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
 
       await getUserInfoAndCheckBlockStatus();
       print("initializeGeoFireListenerWeb");
-      initializeGeoFireListenerWeb();
+      await initializeGeoFireListenerWeb();
       // if (!kIsWeb) {
       //   await initializeGeoFireListener();
       // } else {
@@ -442,6 +505,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   }
 
   getUserInfoAndCheckBlockStatus() async {
+    if (boolgetUserInfoAndCheckBlockStatus) return;
     try {
       DatabaseReference usersRef = FirebaseDatabase.instance
           .ref()
@@ -454,7 +518,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       if (snap.value != null) {
         Map userData = snap.value as Map;
         String? blockStatus = userData["blockStatus"];
-        String? name = userData["firstName"];
+        String? name = userData["username"];
         String? phone = userData["phone"];
 
         if (blockStatus == "no") {
@@ -819,7 +883,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     return degrees * pi / 180.0;
   }
 
-  initializeGeoFireListenerWeb() {
+  initializeGeoFireListenerWeb()async {
+    if (boolinitializeGeoFireListenerWeb) return;
     print('Starting initializeGeoFireListenerWeb');
 
     final DatabaseReference driversRef =
@@ -834,7 +899,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         .orderByChild('position'); // Assume 'position' is lat/lng pair
     print('Created query for drivers based on position');
 
-    query.onValue.listen((event) {
+    geoFireSubscriptionWeb = query.onValue.listen((event) {
       print('Received event in GeoFire listener');
       if (event.snapshot.value != null) {
         final Map<dynamic, dynamic> driversMap =
@@ -843,20 +908,15 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         driversMap.forEach((key, value) {
           print('Processing driver: $key');
 
-          // Assuming value contains the position data as latitude and longitude
           double driverLat = value['latitude'];
           double driverLng = value['longitude'];
 
-          // Check if the driver is within the radius
           if (_isWithinRadius(
               driverLat, driverLng, latitude, longitude, radiusInKm)) {
-            print(ManageDriversMethod.nearbyOnlineDriversList);
-            // Check if the driver already exists in the list
             bool driverExists = ManageDriversMethod.nearbyOnlineDriversList
                 .any((driver) => driver.uidDriver == key);
 
             if (!driverExists) {
-              // Handle the driver as within the radius
               OnlineNearbyDrivers onlineNearbyDrivers = OnlineNearbyDrivers();
               onlineNearbyDrivers.uidDriver = key;
               onlineNearbyDrivers.latDriver = driverLat;
@@ -869,7 +929,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
               print(ManageDriversMethod.nearbyOnlineDriversList);
 
               if (nearbyOnlineDriversKeysLoaded == true) {
-                //update drivers on google map
                 updateAvailableNearbyOnlineDriversOnMap();
               }
             } else {
@@ -879,20 +938,65 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         });
 
         nearbyOnlineDriversKeysLoaded = true;
-
-        //update drivers on google map
         updateAvailableNearbyOnlineDriversOnMap();
       } else {
         print('No drivers found in GeoFire listener');
       }
-    }).onError((error) {
-      print('Error in GeoFire listener: $error');
     });
 
     print('initializeGeoFireListenerWeb completed');
 
     // Call this method after the drivers have been processed
-    saveStateAfterDriverListPopulated();
+    // saveStateAfterDriverListPopulated();
+  }
+
+  void stopGeoFireListenerWeb() {
+    if (geoFireSubscriptionWeb != null) {
+      geoFireSubscriptionWeb!.cancel();
+      print("GeoFire web listener stopped");
+    }
+  }
+
+  Future<void> handlePaymentAndRedirect() async {
+    print("entered handlePaymentAndRedirect before try ");
+    print(paymentPending);
+    print(stateOfApp);
+    try {
+      print("entered handlePaymentAndRedirect after try ");
+      print(
+          "Before saving state in handlePaymentAndRedirect: availableNearbyOnlineDriversList count = ${availableNearbyOnlineDriversList?.length}");
+      if (!paymentPending) {
+        await saveStateBeforeRedirect();
+
+        // Calculate the fare amount
+        double amountInCents =
+            cMethods.calculateFareAmount(tripDirectionDetailsInfo!);
+
+        print("after calculating fare amount");
+
+        // Redirect to checkout and get the session ID
+        print("before  calling redirectToCheckout in handlePayment");
+        await redirectToCheckout(context, amountInCents);
+        print("after calling redirectToCheckout in handlePayment");
+      } else {
+        print(paymentPending);
+        print("before presentPaymentSheet called");
+        await presentPaymentSheet();
+        print("after displayRequestContainer");
+        print(
+            "after displayRequestContainer: availableNearbyOnlineDriversList count = ${availableNearbyOnlineDriversList?.length}");
+        // availableNearbyOnlineDriversList =
+        //     ManageDriversMethod.nearbyOnlineDriversList;
+        print(availableNearbyOnlineDriversList![0]);
+        print("ManageDriversMethod1");
+
+        // Search for a driver
+        searchDriver();
+        print(searchDriver);
+      }
+    } catch (e) {
+      print("Error in handlePaymentAndRedirect: $e");
+    }
   }
 
   Future<void> presentPaymentSheet() async {
@@ -917,109 +1021,38 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> handlePaymentAndRedirect() async {
-    print("entered handlePaymentAndRedirect before try ");
-    print(paymentPending);
-    print(stateOfApp);
-    try {
-      print("entered handlePaymentAndRedirect after try ");
-      print(
-          "Before saving state in handlePaymentAndRedirect: availableNearbyOnlineDriversList count = ${availableNearbyOnlineDriversList?.length}");
-      if (!paymentPending) {
-        await saveStateBeforeRedirect();
-
-        // Calculate the fare amount
-        double amountInCents =
-            cMethods.calculateFareAmount(tripDirectionDetailsInfo!);
-
-        print("after calculating fare amount");
-
-        // Redirect to checkout and get the session ID
-        print("before  calling redirectToCheckout in handlePayment");
-        final sessionId = await redirectToCheckout(context, amountInCents);
-        print("after calling redirectToCheckout in handlePayment");
-      } else {
-        print(paymentPending);
-        print("before presentPaymentSheet called");
-        await presentPaymentSheet();
-        print("after displayRequestContainer");
-        print(nearbyOnlineDriversList);
-        availableNearbyOnlineDriversList =
-            ManageDriversMethod.nearbyOnlineDriversList;
-        print(availableNearbyOnlineDriversList);
-        print("ManageDriversMethod1");
-
-        // Search for a driver
-        searchDriver();
-        print(searchDriver);
-      }
-    } catch (e) {
-      print("Error in handlePaymentAndRedirect: $e");
-    }
-  }
-
   makeTripRequest() {
     print("before tripRequestRef");
     tripRequestRef =
         FirebaseDatabase.instance.ref().child("tripRequests").push();
     print("after tripRequestRef");
-
     print(tripRequestRef);
     print("makeTripRequest");
     print("makeTripRequest");
-
-    // var dropOffDestinationLocation =
-    //     Provider.of<Appinfo>(context, listen: false).dropOffLocation;
-    // if (dropOffDestinationLocation != null) {
-    //   print(dropOffDestinationLocation.placeName);
-    // } else {
-    //   print("Drop-off location is null");
-    // }
-
     var pickUpLocation =
         Provider.of<Appinfo>(context, listen: false).pickUpLocation;
+    var dropOffDestinationLocation =
+        Provider.of<Appinfo>(context, listen: false).dropOffLocation;
+
     print(pickUpLocation!.placeName);
-
-    var dropOffDestinationLocation = this.dropOffDestinationLocation;
-    if (dropOffDestinationLocation != null) {
-      print(dropOffDestinationLocation.placeName);
-
-      // Convert Location to AddressModel
-      AddressModel dropOffAddressModel = AddressModel(
-        placeName: dropOffDestinationLocation.placeName,
-        latitudePositon: dropOffDestinationLocation.latitudePositon,
-        longitudePosition: dropOffDestinationLocation.longitudePosition,
-        humanReadableAddress: dropOffDestinationLocation
-            .placeName, // You can adjust this as needed
-        placeId: null, // You can set this to a relevant value if available
-      );
-
-      // Update the Provider with the restored drop-off location
-      var appInfo = Provider.of<Appinfo>(context, listen: false);
-      appInfo.updateDropOffLocation(dropOffAddressModel);
-    } else {
-      print("Drop-off location is null");
-    }
+    print(dropOffDestinationLocation!.placeName);
 
     Map pickUpCoOrdinatesMap = {
-      "latitude": pickUpLocation!.latitudePositon.toString(),
+      "latitude": pickUpLocation.latitudePositon.toString(),
       "longitude": pickUpLocation.longitudePosition.toString(),
     };
     print(pickUpCoOrdinatesMap);
-
+    print(pickUpCoOrdinatesMap.runtimeType);
     Map dropOffDestinationCoOrdinatesMap = {
-      "latitude": dropOffDestinationLocation!.latitudePositon.toString(),
+      "latitude": dropOffDestinationLocation.latitudePositon.toString(),
       "longitude": dropOffDestinationLocation.longitudePosition.toString(),
     };
     print(dropOffDestinationCoOrdinatesMap);
-
-    // Map driverCoOrdinates = {
-    //   "latitude": "",
-    //   "longitude": "",
-    // };
-
-    // print(driverCoOrdinates);
-
+    print(dropOffDestinationCoOrdinatesMap.runtimeType);
+    Map driverCoOrdinates = {
+      "latitude": "",
+      "longitude": "",
+    };
     Map dataMap = {
       "tripID": tripRequestRef!.key,
       "publishDateTime": DateTime.now().toString(),
@@ -1032,105 +1065,103 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       "dropOffAddress": dropOffDestinationLocation.placeName,
       "driverID": "waiting",
       "carDetails": "",
-      "driverLocation": "",
+      "driverLocation": driverCoOrdinates,
       "driverName": "",
       "driverPhone": "",
       "driverPhoto": "",
       "fareAmount": "",
       "status": "new",
     };
-
     tripRequestRef!.set(dataMap);
-    print("after setting datamap");
-    print("status");
 
     tripStreamSubscription =
         tripRequestRef!.onValue.listen((eventSnapshot) async {
+      print(eventSnapshot.snapshot.value);
+      print("Entered tripStreamSubscription");
+
+      // Introduce a delay before processing the data
+      //  await Future.delayed(Duration(seconds: 3)); // Waits for 2 seconds
+
       if (eventSnapshot.snapshot.value == null) {
-        print("tripRequestRef is null");
         return;
       }
 
-      if ((eventSnapshot.snapshot.value as Map)["driverName"] != null) {
-        nameDriver = (eventSnapshot.snapshot.value as Map)["driverName"];
-        print(nameDriver);
-      }
+      Map<dynamic, dynamic> data =
+          eventSnapshot.snapshot.value as Map<dynamic, dynamic>;
 
-      if ((eventSnapshot.snapshot.value as Map)["driverPhone"] != null) {
-        phoneNumberDriver =
-            (eventSnapshot.snapshot.value as Map)["driverPhone"];
-      }
+      // Handle driver information
+      nameDriver = data["driverName"] ?? nameDriver;
+      print(nameDriver);
+      phoneNumberDriver = data["driverPhone"] ?? phoneNumberDriver;
+      photoDriver = data["driverPhoto"] ?? photoDriver;
+      carDetialsDriver = data["carDetails"] ?? carDetialsDriver;
+      print(carDetialsDriver);
 
-      if ((eventSnapshot.snapshot.value as Map)["driverPhoto"] != null) {
-        photoDriver = (eventSnapshot.snapshot.value as Map)["driverPhoto"];
-      }
+      // Handle status
+      status = data["status"] ?? status;
+      print("status = $status");
 
-      if ((eventSnapshot.snapshot.value as Map)["carDetails"] != null) {
-        carDetialsDriver = (eventSnapshot.snapshot.value as Map)["carDetails"];
-      }
+      // Handle driver location
+      if (data["driverLocation"] != null) {
+        print("Driver location is not null");
 
-      if ((eventSnapshot.snapshot.value as Map)["status"] != null) {
-        status = (eventSnapshot.snapshot.value as Map)["status"];
-      }
+        // Log the exact values being parsed to help identify the issue
+        var latitudeString =
+            data["driverLocation"]["latitude"]?.toString() ?? "";
+        var longitudeString =
+            data["driverLocation"]["longitude"]?.toString() ?? "";
 
-      if ((eventSnapshot.snapshot.value as Map)["driverLocation"] != null) {
-        try {
-          var latValue = (eventSnapshot.snapshot.value as Map)["driverLocation"]
-              ["latitude"];
-          print(latValue);
-          var lngValue = (eventSnapshot.snapshot.value as Map)["driverLocation"]
-              ["longitude"];
-          print(lngValue);
+        print("Raw Latitude String: '$latitudeString'");
+        print("Raw Longitude String: '$longitudeString'");
 
-          double driverLatitude =
-              0.0; // Declare the variable with a default value
-          double driverLongitude =
-              0.0; // Declare the variable with a default value
+        if (latitudeString.isNotEmpty && longitudeString.isNotEmpty) {
+          try {
+            double driverLatitude =
+                double.tryParse(latitudeString.trim()) ?? 0.0;
+            double driverLongitude =
+                double.tryParse(longitudeString.trim()) ?? 0.0;
 
-          if (latValue != null && latValue is String) {
-            driverLatitude = double.parse(latValue);
-            print(driverLatitude);
+            print(
+                "Parsed Latitude: $driverLatitude, Parsed Longitude: $driverLongitude");
+
+            if (driverLatitude != 0.0 && driverLongitude != 0.0) {
+              LatLng driverCurrentLocationLatLng =
+                  LatLng(driverLatitude, driverLongitude);
+
+              if (status == "accepted") {
+                updateFromDriverCurrentLocationToPickUp(
+                    driverCurrentLocationLatLng);
+              } else if (status == "arrived") {
+                setState(() {
+                  tripStatusDisplay = 'Driver has Arrived';
+                });
+              } else if (status == "ontrip") {
+                updateFromDriverCurrentLocationToDropOffDestination(
+                    driverCurrentLocationLatLng);
+              }
+            } else {
+              print("Invalid latitude or longitude parsed to 0.0");
+            }
+          } catch (e) {
+            print("Error parsing latitude or longitude: $e");
           }
-
-          if (lngValue != null && lngValue is String) {
-            driverLongitude = double.parse(lngValue);
-            print(driverLongitude);
-          }
-
-          LatLng driverCurrentLocationLatLng =
-              LatLng(driverLatitude, driverLongitude);
-          print(
-              "driver current location latlng : $driverCurrentLocationLatLng");
-
-          if (status == "accepted") {
-            // Update info for pickup to user on UI
-            // Info from driver current location to user pickup location
-            print("status is accepted by driver");
-            print("before updateFromDriverCurrentLocationToPickUp ");
-            updateFromDriverCurrentLocationToPickUp(
-                driverCurrentLocationLatLng);
-          } else if (status == "arrived") {
-            // Update info for arrived - when driver reach at the pickup point of user
-            setState(() {
-              tripStatusDisplay = 'Driver has Arrived';
-            });
-          } else if (status == "ontrip") {
-            // Update info for dropoff to user on UI
-            // Info from driver current location to user dropoff location
-            updateFromDriverCurrentLocationToDropOffDestination(
-                driverCurrentLocationLatLng);
-          }
-        } on Exception catch (e) {
-          print("Error: $e");
+        } else {
+          print("Latitude or Longitude is empty or null");
         }
+      } else {
+        print("driverLocation is null");
       }
 
       if (status == "accepted") {
         displayTripDetailsContainer();
 
-        Geofire.stopListener();
+        if (!kIsWeb) {
+          Geofire.stopListener();
+        } else {
+          stopGeoFireListenerWeb();
+          print('Geofire.stopListener is not supported on the web.');
+        }
 
-        //remove drivers markers
         setState(() {
           markerSet.removeWhere(
               (element) => element.markerId.value.contains("driver"));
@@ -1140,17 +1171,211 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       if (status == "ended") {
         tripRequestRef!.onDisconnect();
         tripRequestRef = null;
-
         tripStreamSubscription!.cancel();
         tripStreamSubscription = null;
-
         resetAppNow();
-
         Navigator.push(context,
             MaterialPageRoute(builder: (BuildContext context) => Homepage()));
       }
     });
   }
+
+  // makeTripRequest() {
+  //   print("before tripRequestRef");
+  //   tripRequestRef =
+  //       FirebaseDatabase.instance.ref().child("tripRequests").push();
+  //   print("after tripRequestRef");
+
+  //   print(tripRequestRef);
+  //   print("makeTripRequest");
+  //   print("makeTripRequest");
+
+  //   // // var pickUpLocation
+  //   // var pickUpLocation = this.pickUpLocation;
+  //   // if (pickUpLocation != null) {
+  //   //   print(pickUpLocation.placeName);
+
+  //   //   // Convert Location to AddressModel
+  //   //   AddressModel pickUpAddressModel = AddressModel(
+  //   //     placeName: pickUpLocation.placeName,
+  //   //     latitudePositon: pickUpLocation.latitudePositon,
+  //   //     longitudePosition: pickUpLocation.longitudePosition,
+  //   //     humanReadableAddress:
+  //   //         pickUpLocation.placeName, // You can adjust this as needed
+  //   //     placeId: null, // You can set this to a relevant value if available
+  //   //   );
+
+  //   //   // / Update the Provider with the restored drop-off location
+  //   //   var appInfo = Provider.of<Appinfo>(context, listen: false);
+  //   //   appInfo.updatePickUpLocation(pickUpAddressModel);
+  //   // } else {
+  //   //   print("pickUp location is null");
+  //   // }
+
+  //   // var dropOffDestinationLocation = this.dropOffDestinationLocation;
+  //   // if (dropOffDestinationLocation != null) {
+  //   //   print(dropOffDestinationLocation.placeName);
+
+  //   //   // Convert Location to AddressModel
+  //   //   AddressModel dropOffAddressModel = AddressModel(
+  //   //     placeName: dropOffDestinationLocation.placeName,
+  //   //     latitudePositon: dropOffDestinationLocation.latitudePositon,
+  //   //     longitudePosition: dropOffDestinationLocation.longitudePosition,
+  //   //     humanReadableAddress: dropOffDestinationLocation
+  //   //         .placeName, // You can adjust this as needed
+  //   //     placeId: null, // You can set this to a relevant value if available
+  //   //   );
+
+  //   //   // Update the Provider with the restored drop-off location
+  //   //   var appInfo = Provider.of<Appinfo>(context, listen: false);
+  //   //   appInfo.updateDropOffLocation(dropOffAddressModel);
+  //   // } else {
+  //   //   print("Drop-off location is null");
+  //   // }
+
+  //   var pickUpLocation =
+  //       Provider.of<Appinfo>(context, listen: false).pickUpLocation;
+  //   var dropOffDestinationLocation =
+  //       Provider.of<Appinfo>(context, listen: false).dropOffLocation;
+
+  //   print(pickUpLocation!.placeName);
+  //   print(dropOffDestinationLocation!.placeName);
+
+  //   Map pickUpCoOrdinatesMap = {
+  //     "latitude": pickUpLocation.latitudePositon.toString(),
+  //     "longitude": pickUpLocation.longitudePosition.toString(),
+  //   };
+
+  //   Map dropOffDestinationCoOrdinatesMap = {
+  //     "latitude": dropOffDestinationLocation.latitudePositon.toString(),
+  //     "longitude": dropOffDestinationLocation.longitudePosition.toString(),
+  //   };
+
+  //   print(dropOffDestinationCoOrdinatesMap);
+
+  //   print(tripRequestRef!.key);
+
+  //   // Map driverCoOrdinates = {
+  //   //   "latitude": "",
+  //   //   "longitude": "",
+  //   // };
+
+  //   // print(driverCoOrdinates);
+
+  //   Map dataMap = {
+  //     "tripID": tripRequestRef!.key,
+  //     "publishDateTime": DateTime.now().toString(),
+  //     "userName": userName,
+  //     "userPhone": userPhone,
+  //     "userID": userID,
+  //     "pickUpLatLng": pickUpCoOrdinatesMap,
+  //     "dropOffLatLng": dropOffDestinationCoOrdinatesMap,
+  //     "pickUpAddress": pickUpLocation.placeName,
+  //     "dropOffAddress": dropOffDestinationLocation.placeName,
+  //     "driverID": "waiting",
+  //     "carDetails": "",
+  //     "driverLocation": "",
+  //     "driverName": "",
+  //     "driverPhone": "",
+  //     "driverPhoto": "",
+  //     "fareAmount": "",
+  //     "status": "new",
+  //   };
+  //   print(dataMap);
+
+  //   tripRequestRef!.set(dataMap);
+  //   print("after setting datamap");
+  //   print("status");
+
+  //   try {
+  //     print("Started tripStreamSubscription");
+  //     tripStreamSubscription =
+  //         tripRequestRef!.onValue.listen((eventSnapshot) async {
+  //       if (eventSnapshot.snapshot.value == null) {
+  //         return;
+  //       }
+  //       if ((eventSnapshot.snapshot.value as Map)["driverName"] != null) {
+  //         nameDriver = (eventSnapshot.snapshot.value as Map)["driverName"];
+  //         print(nameDriver);
+  //       }
+  //       if ((eventSnapshot.snapshot.value as Map)["driverPhone"] != null) {
+  //         phoneNumberDriver =
+  //             (eventSnapshot.snapshot.value as Map)["driverPhone"];
+  //       }
+  //       if ((eventSnapshot.snapshot.value as Map)["driverPhoto"] != null) {
+  //         photoDriver = (eventSnapshot.snapshot.value as Map)["driverPhoto"];
+  //       }
+  //       if ((eventSnapshot.snapshot.value as Map)["carDetails"] != null) {
+  //         carDetialsDriver =
+  //             (eventSnapshot.snapshot.value as Map)["carDetails"];
+  //       }
+  //       if ((eventSnapshot.snapshot.value as Map)["status"] != null) {
+  //         status = (eventSnapshot.snapshot.value as Map)["status"];
+  //         print(status);
+  //       }
+  //       if ((eventSnapshot.snapshot.value as Map)["driverLocation"] != null) {
+  //         try {
+  //           double driverLatitude = double.parse((eventSnapshot.snapshot.value
+  //                   as Map)["driverLocation"]["latitude"]
+  //               .toString());
+  //           print(driverLatitude);
+  //           double driverLongitude = double.parse((eventSnapshot.snapshot.value
+  //                   as Map)["driverLocation"]["longitude"]
+  //               .toString());
+  //           print(driverLongitude);
+  //           LatLng driverCurrentLocationLatLng =
+  //               LatLng(driverLatitude, driverLongitude);
+  //           if (status == "accepted") {
+  //             //update info for pickup to user on UI
+  //             //info from driver current location to user pickup location
+  //             updateFromDriverCurrentLocationToPickUp(
+  //                 driverCurrentLocationLatLng);
+  //           } else if (status == "arrived") {
+  //             //update info for arrived - when driver reach at the pickup point of user
+  //             setState(() {
+  //               tripStatusDisplay = 'Driver has Arrived';
+  //             });
+  //           } else if (status == "ontrip") {
+  //             //update info for dropoff to user on UI
+  //             //info from driver current location to user dropoff location
+  //             updateFromDriverCurrentLocationToDropOffDestination(
+  //                 driverCurrentLocationLatLng);
+  //           }
+  //         } on Exception catch (e) {
+  //           print("error : $e");
+  //         }
+  //       } else {
+  //         print("DriverloCation is null");
+  //       }
+  //       if (status == "accepted") {
+  //         displayTripDetailsContainer();
+
+  //         Geofire.stopListener();
+
+  //         //remove drivers markers
+  //         setState(() {
+  //           markerSet.removeWhere(
+  //               (element) => element.markerId.value.contains("driver"));
+  //         });
+  //       }
+
+  //       if (status == "ended") {
+  //         tripRequestRef!.onDisconnect();
+  //         tripRequestRef = null;
+
+  //         tripStreamSubscription!.cancel();
+  //         tripStreamSubscription = null;
+
+  //         resetAppNow();
+
+  //         Navigator.push(context,
+  //             MaterialPageRoute(builder: (BuildContext context) => Homepage()));
+  //       }
+  //     });
+  //   } catch (e) {
+  //     print("Error caused in tripStream");
+  //   }
+  // }
 
   displayTripDetailsContainer() {
     setState(() {
@@ -1160,7 +1385,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     });
   }
 
-  updateFromDriverCurrentLocationToPickUp(driverCurrentLocationLatLng) async {
+  updateFromDriverCurrentLocationToPickUp(
+      LatLng driverCurrentLocationLatLng) async {
     print("entered into updateFromDriverCurrentLocationToPickUp");
     if (!requestingDirectionDetailsInfo) {
       requestingDirectionDetailsInfo = true;
@@ -1168,11 +1394,14 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       var userPickUpLocationLatLng = LatLng(
           currentPositionOfUser!.latitude, currentPositionOfUser!.longitude);
 
+      print(userPickUpLocationLatLng);
+
       var directionDetailsPickup =
           await CommonMethods.getDirectionDetailsFromAPI(
               driverCurrentLocationLatLng, userPickUpLocationLatLng);
 
       if (directionDetailsPickup == null) {
+        print("directionDetailsPickup is null");
         return;
       }
 
@@ -1192,14 +1421,17 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
 
       var dropOffLocation =
           Provider.of<Appinfo>(context, listen: false).dropOffLocation;
-      var userDropOffLocationLatLng = LatLng(dropOffLocation!.latitudePositon!,
-          dropOffLocation.longitudePosition!);
+      print(dropOffLocation!.placeName);
+      var userDropOffLocationLatLng = LatLng(
+          dropOffLocation.latitudePositon!, dropOffLocation.longitudePosition!);
+      print(userDropOffLocationLatLng);
 
       var directionDetailsPickup =
           await CommonMethods.getDirectionDetailsFromAPI(
               driverCurrentLocationLatLng, userDropOffLocationLatLng);
 
       if (directionDetailsPickup == null) {
+        print(" direction Details Pickup is null");
         return;
       }
 
@@ -1242,7 +1474,11 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       return;
     }
 
+    print(
+        "availableNearbyOnlineDriversList:  ${availableNearbyOnlineDriversList![0]}");
+
     var currentDriver = availableNearbyOnlineDriversList![0];
+    print(currentDriver);
     print("driver is found ${currentDriver.uidDriver}");
 
     //send notification to this currentDriver - currentDriver means selected driver
@@ -1264,8 +1500,12 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         tripRequestRef == null) {
       print(
           "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is null");
+      // sendNotificationToDriver(currentDriver);
       return;
     }
+
+    print(
+        "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is not null");
 
     // Update driver's newTripStatus - assign tripID to current driver
     DatabaseReference currentDriverRef = FirebaseDatabase.instance
@@ -1275,12 +1515,15 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         .child("newTripStatus");
 
     currentDriverRef.set(tripRequestRef!.key).then((_) {
+      print("Driver's newTripStatus updated successfully");
       // Get current driver device recognition token
       DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
           .ref()
           .child("drivers")
           .child(currentDriver.uidDriver.toString())
           .child("deviceToken");
+
+      print("tokenOfCurrentDriverRef");
 
       tokenOfCurrentDriverRef.once().then((dataSnapshot) {
         if (dataSnapshot.snapshot.value != null) {
@@ -1545,30 +1788,30 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             },
           ),
 
-          if (isAssigningDriver) ...[
-            Opacity(
-              opacity: 0.7, // Adjust the opacity as needed
-              child: Container(
-                color: Colors.black, // Black color with opacity
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      CircularProgressIndicator(),
-                      SizedBox(height: 20),
-                      Text(
-                        "Finding Near by  Drivers...",
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.white, // Text color set to white
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          // if (isAssigningDriver) ...[
+          //   Opacity(
+          //     opacity: 0.7, // Adjust the opacity as needed
+          //     child: Container(
+          //       color: Colors.black, // Black color with opacity
+          //       child: const Center(
+          //         child: Column(
+          //           mainAxisAlignment: MainAxisAlignment.center,
+          //           children: [
+          //             CircularProgressIndicator(),
+          //             SizedBox(height: 20),
+          //             Text(
+          //               "Finding Near by  Drivers...",
+          //               style: TextStyle(
+          //                 fontSize: 18,
+          //                 color: Colors.white, // Text color set to white
+          //               ),
+          //             ),
+          //           ],
+          //         ),
+          //       ),
+          //     ),
+          //   ),
+          // ],
 
           ///drawer button
           Positioned(
@@ -1781,28 +2024,28 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
                                         builder: (context) => MobilityAidsPage(
                                           onFormSubmitted: () async {
                                             Navigator.pop(context);
-                                            print(
-                                                "before handlePaymentAndRedirect called ");
-                                            await handlePaymentAndRedirect();
-                                            //   print(
-                                            //       "after handlePaymentAndRedirect called ");
-                                            //   print(paymentPending);
-                                            //   print(
-                                            //       "before presentPaymentSheet called");
-                                            //   await presentPaymentSheet();
-                                            //   print(
-                                            //       "after displayRequestContainer");
-                                            //   print(nearbyOnlineDriversList);
-                                            //   availableNearbyOnlineDriversList =
-                                            //       ManageDriversMethod
-                                            //           .nearbyOnlineDriversList;
-                                            //   print(
-                                            //       availableNearbyOnlineDriversList);
-                                            //   print("ManageDriversMethod1");
+                                    print(
+                                        "before handlePaymentAndRedirect called ");
+                                    handlePaymentAndRedirect();
+                                    print(
+                                        "after handlePaymentAndRedirect called ");
+                                    // //   print(paymentPending);
+                                    //   print(
+                                    //       "before presentPaymentSheet called");
+                                    //  presentPaymentSheet();
+                                    // print(
+                                    //     "after displayRequestContainer");
+                                    // print(nearbyOnlineDriversList);
+                                    // availableNearbyOnlineDriversList =
+                                    //     ManageDriversMethod
+                                    //         .nearbyOnlineDriversList;
+                                    // print(
+                                    //     availableNearbyOnlineDriversList);
+                                    // print("ManageDriversMethod1");
 
-                                            //   // Search for a driver
-                                            //   searchDriver();
-                                            //   print(searchDriver);
+                                    // // Search for a driver
+                                    // searchDriver();
+                                    // print(searchDriver);
                                           },
                                         ),
                                       ),
