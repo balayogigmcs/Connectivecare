@@ -99,6 +99,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       boolgetCurrentLiveLocationOfUser = true;
       boolgetUserInfoAndCheckBlockStatus = true;
       boolinitializeGeoFireListenerWeb = true;
+      print("restoreMapState is called ");
+      restoreMapState();
       print("restoreStateAfterRestart is called");
       restoreStateAfterRestart();
       print("before _checkPaymentStatus");
@@ -113,31 +115,18 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      final String? sessionId = html.window.localStorage['sessionId'];
-      final String? paymentStatus = html.window.localStorage['paymentStatus'];
-      if (sessionId != null && paymentStatus == 'pending') {
-        restoreStateAfterRestart();
-      } else {
-        _initializeMapAndLocation();
-      }
-    }
-  }
-
-  void _initializeMapAndLocation() {
-    if (controllerGoogleMap != null) {
-      controllerGoogleMap!.dispose();
-      controllerGoogleMap = null;
-    }
-    googleMapCompleterController.future.then((controller) {
-      controllerGoogleMap = controller;
-      updateMapTheme(controllerGoogleMap!);
-    });
-
-    getCurrentLiveLocationOfUser();
-  }
+  // @override
+  // void didChangeAppLifecycleState(AppLifecycleState state) {
+  //   if (state == AppLifecycleState.resumed) {
+  //     final String? sessionId = html.window.localStorage['sessionId'];
+  //     final String? paymentStatus = html.window.localStorage['paymentStatus'];
+  //     if (sessionId != null && paymentStatus == 'pending') {
+  //       restoreStateAfterRestart();
+  //     } else {
+  //       _initializeMapAndLocation();
+  //     }
+  //   }
+  // }
 
   Future<void> _checkPaymentStatus() async {
     final String? sessionId = html.window.localStorage['sessionId'];
@@ -218,6 +207,54 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   //       "Saved availableNearbyOnlineDriversList: ${jsonEncode(ManageDriversMethod.nearbyOnlineDriversList)}");
   // }
 
+  Future<void> saveMapState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    // Save camera position (approximately using the center of the visible region)
+    LatLngBounds bounds = await controllerGoogleMap!.getVisibleRegion();
+    LatLng center = LatLng(
+      (bounds.northeast.latitude + bounds.southwest.latitude) / 2,
+      (bounds.northeast.longitude + bounds.southwest.longitude) / 2,
+    );
+    prefs.setDouble('cameraLatitude', center.latitude);
+    prefs.setDouble('cameraLongitude', center.longitude);
+
+    // Save markers
+    List<String> markerList = markerSet
+        .map((marker) => jsonEncode({
+              'markerId': marker.markerId.value,
+              'latitude': marker.position.latitude,
+              'longitude': marker.position.longitude,
+            }))
+        .toList();
+    prefs.setStringList('markers', markerList);
+
+    // Save polylines
+    List<String> polylineList = polylineSet
+        .map((polyline) => jsonEncode({
+              'polylineId': polyline.polylineId.value,
+              'points': polyline.points
+                  .map((point) => {
+                        'latitude': point.latitude,
+                        'longitude': point.longitude
+                      })
+                  .toList(),
+            }))
+        .toList();
+    prefs.setStringList('polylines', polylineList);
+
+    // Save circles
+    List<String> circleList = circleSet
+        .map((circle) => jsonEncode({
+              'circleId': circle.circleId.value,
+              'latitude': circle.center.latitude,
+              'longitude': circle.center.longitude,
+              'radius': circle.radius,
+            }))
+        .toList();
+    prefs.setStringList('circles', circleList);
+  }
+
   Future<void> saveStateBeforeRedirect() async {
     if (boolsaveStateBeforeRedirect) return;
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -239,8 +276,8 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     //     Provider.of<Appinfo>(context, listen: false).dropOffLocation;
 
     // Store trip details
-    prefs.setString('tripRequestKey', tripRequestRef?.key ?? '');
-    prefs.setString('status', status);
+    // prefs.setString('tripRequestKey', tripRequestRef?.key ?? '');
+    // prefs.setString('status', status);
     prefs.setString('stateOfApp', stateOfApp);
     print(
         "Saved trip details: tripRequestKey = ${tripRequestRef?.key}, status = $status, stateOfApp = $stateOfApp");
@@ -270,27 +307,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
 
     print(
         "dropoff Placename = ${dropOffDestinationLocation!.placeName}, dropoffLat = ${dropOffDestinationLocation.latitudePositon}, dropoffLng = ${dropOffDestinationLocation.longitudePosition}");
-
-    // // Store pickup and dropoff locations
-    // if (pickUpLocation != null) {
-    //   prefs.setString('pickupPlaceName', pickUpLocation.placeName ?? '');
-    //   prefs.setDouble('pickupLatitude', pickUpLocation.latitudePositon ?? 0.0);
-    //   prefs.setDouble(
-    //       'pickupLongitude', pickUpLocation.longitudePosition ?? 0.0);
-    //   print(
-    //       "Saved pickup location: Place Name = ${pickUpLocation.placeName}, Latitude = ${pickUpLocation.latitudePositon}, Longitude = ${pickUpLocation.longitudePosition}");
-    // }
-
-    // if (dropOffDestinationLocation != null) {
-    //   prefs.setString(
-    //       'dropoffPlaceName', dropOffDestinationLocation.placeName ?? '');
-    //   prefs.setDouble(
-    //       'dropoffLatitude', dropOffDestinationLocation.latitudePositon ?? 0.0);
-    //   prefs.setDouble('dropoffLongitude',
-    //       dropOffDestinationLocation.longitudePosition ?? 0.0);
-    //   print(
-    //       "Saved dropoff location: Place Name = ${dropOffDestinationLocation.placeName}, Latitude = ${dropOffDestinationLocation.latitudePositon}, Longitude = ${dropOffDestinationLocation.longitudePosition}");
-    // }
 
     // Store driver details
     prefs.setString('driverName', nameDriver);
@@ -334,6 +350,69 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
   // Location? pickUpLocation;
   // Location? dropOffDestinationLocation;
 
+  Future<void> restoreMapState() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    /// Restore camera position
+    double latitude = prefs.getDouble('cameraLatitude') ?? 0.0;
+    double longitude = prefs.getDouble('cameraLongitude') ?? 0.0;
+    CameraPosition cameraPosition = CameraPosition(
+      target: LatLng(latitude, longitude),
+      zoom: 15.0, // You can also save and restore the zoom level if needed
+    );
+    controllerGoogleMap!
+        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+
+    // Restore markers
+    List<String>? markerList = prefs.getStringList('markers');
+    if (markerList != null) {
+      markerSet.clear();
+      markerSet = markerList.map((markerStr) {
+        Map<String, dynamic> markerMap = jsonDecode(markerStr);
+        return Marker(
+          markerId: MarkerId(markerMap['markerId']),
+          position: LatLng(markerMap['latitude'], markerMap['longitude']),
+          icon: BitmapDescriptor.defaultMarker,
+        );
+      }).toSet();
+    }
+
+    // Restore polylines
+    List<String>? polylineList = prefs.getStringList('polylines');
+    if (polylineList != null) {
+      polylineSet.clear();
+      polylineSet = polylineList.map((polylineStr) {
+        Map<String, dynamic> polylineMap = jsonDecode(polylineStr);
+        List<LatLng> points = (polylineMap['points'] as List)
+            .map((pointMap) =>
+                LatLng(pointMap['latitude'], pointMap['longitude']))
+            .toList();
+        return Polyline(
+          polylineId: PolylineId(polylineMap['polylineId']),
+          points: points,
+          color: Colors.blue,
+        );
+      }).toSet();
+    }
+
+    // Restore circles
+    List<String>? circleList = prefs.getStringList('circles');
+    if (circleList != null) {
+      circleSet.clear();
+      circleSet = circleList.map((circleStr) {
+        Map<String, dynamic> circleMap = jsonDecode(circleStr);
+        return Circle(
+          circleId: CircleId(circleMap['circleId']),
+          center: LatLng(circleMap['latitude'], circleMap['longitude']),
+          radius: circleMap['radius'],
+          fillColor: Colors.blue.withOpacity(0.5),
+          strokeColor: Colors.blue,
+          strokeWidth: 2,
+        );
+      }).toSet();
+    }
+  }
+
   void restoreStateAfterRestart() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -360,16 +439,16 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     print(
         "Restored user position: Latitude = $latitude, Longitude = $longitude");
 
-    // Restore tripRequestKey
-    String? tripKey = prefs.getString('tripRequestKey');
-    if (tripKey != null && tripKey.isNotEmpty) {
-      tripRequestRef =
-          FirebaseDatabase.instance.ref().child("tripRequests").child(tripKey);
-    }
-    print("Restored tripRequestKey: $tripKey");
+    // // Restore tripRequestKey
+    // String? tripKey = prefs.getString('tripRequestKey');
+    // if (tripKey != null && tripKey.isNotEmpty) {
+    //   tripRequestRef =
+    //       FirebaseDatabase.instance.ref().child("tripRequests").child(tripKey);
+    // }
+    // print("Restored tripRequestKey: $tripKey");
 
     // Restore status and state of the app
-    status = prefs.getString('status') ?? '';
+    // status = prefs.getString('status') ?? '';
     stateOfApp = prefs.getString('stateOfApp') ?? '';
     print("Restored status: $status");
     print("Restored stateOfApp: $stateOfApp");
@@ -459,8 +538,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
             .toList();
     print(
         "Restored availableNearbyOnlineDriversList: $availableNearbyOnlineDriversList drivers loaded");
-
-    _initializeMapAndLocation();
   }
 
   makeDriverNearbyCarIcon() {
@@ -510,15 +587,20 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       await CommonMethods.convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(
           currentPositionOfUser!, context);
 
-      await getUserInfoAndCheckBlockStatus();
-      print("initializeGeoFireListenerWeb");
-      await initializeGeoFireListenerWeb();
-      // if (!kIsWeb) {
-      //   await initializeGeoFireListener();
-      // } else {
-      //   print("initializeGeoFireListenerWeb");
-      //   initializeGeoFireListenerWeb();
-      // }
+      if (paymentPending) {
+        print("retrieveDirectionDetails execution when payment is pending");
+        await retrieveDirectionDetails();
+      } else {
+        await getUserInfoAndCheckBlockStatus();
+        print("initializeGeoFireListenerWeb");
+        await initializeGeoFireListenerWeb();
+        // if (!kIsWeb) {
+        //   await initializeGeoFireListener();
+        // } else {
+        //   print("initializeGeoFireListenerWeb");
+        //   initializeGeoFireListenerWeb();
+        // }
+      }
     } catch (e) {
       // Handle exceptions if needed
       print('Error in getCurrentLiveLocationOfUser: $e');
@@ -987,6 +1069,7 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
       print(
           "Before saving state in handlePaymentAndRedirect: availableNearbyOnlineDriversList count = ${availableNearbyOnlineDriversList?.length}");
       if (!paymentPending) {
+        await saveMapState();
         await saveStateBeforeRedirect();
 
         // Calculate the fare amount

@@ -174,6 +174,7 @@ class CommonMethods {
   ///Reverse GeoCoding
   static Future<String> convertGeoGraphicCoOrdinatesIntoHumanReadableAddress(
       Position position, BuildContext context) async {
+        print("Entered into convertGeoGraphicCoOrdinatesIntoHumanReadableAddress");
     String humanReadableAddress = "";
     String apiGeoCodingUrl =
         "https://maps.googleapis.com/maps/api/geocode/json?latlng=${position.latitude},${position.longitude}&key=$googleMapKey";
