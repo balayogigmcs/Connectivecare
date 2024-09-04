@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -26,6 +27,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     )..repeat(reverse: true); // Logo scale animation
 
     _startAnimations();
+    print("Animation Started");
   }
 
   @override

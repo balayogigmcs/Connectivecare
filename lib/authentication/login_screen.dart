@@ -1,5 +1,4 @@
 import 'package:cccc/authentication/signup_screen.dart';
-import 'package:cccc/forms/personaldetails.dart';
 import 'package:cccc/global/global_var.dart';
 import 'package:cccc/methods/common_methods.dart';
 import 'package:cccc/pages/homepage.dart';
@@ -22,9 +21,14 @@ class _LoginScreenState extends State<LoginScreen> {
   CommonMethods cmethods = CommonMethods();
 
   checkIfNetworkAvailable() {
+    print("before check Connectivity");
     cmethods.checkConnectivity(context);
+    print("after check Connectivity");
+
+    print("before SigninFormValidation");
 
     signInFormValidation();
+    print("after signinFormValidation");
   }
 
   void signInFormValidation() {
@@ -42,6 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   signInForm() async {
+    print("Entered into signInForm");
     showDialog(
         context: context,
         builder: (BuildContext context) =>
@@ -67,12 +72,23 @@ class _LoginScreenState extends State<LoginScreen> {
       usersRef.once().then((snap) {
         if (snap.snapshot.value != null) {
           if ((snap.snapshot.value as Map)["blockStatus"] == "no") {
-            userName = (snap.snapshot.value as Map)["name"];
-            userPhone = (snap.snapshot.value as Map)["phone"];
+            print("username");
+            userName = (snap.snapshot.value as Map)["username"];
+            print("after userNAme");
+            // print("userPhone");
+            // userPhone = (snap.snapshot.value as Map)["phone"];
+            // if(kIsWeb){
+            // Navigator.push(
+            //     context,
+            //     MaterialPageRoute(
+            //         builder: (BuildContext context) => HomepageWeb()));
+            // }
+            // else{
             Navigator.push(
                 context,
                 MaterialPageRoute(
                     builder: (BuildContext context) => Homepage()));
+            // }
           } else {
             FirebaseAuth.instance.signOut();
             cmethods.displaySnackbar(
@@ -154,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             MaterialPageRoute(
                                 builder: (context) => SignupScreen()));
                       },
-                      child:  Text(
+                      child: Text(
                         'Don\'t have a account? Register here',
                         style: TextStyle(color: Colors.blue),
                       ),

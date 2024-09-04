@@ -22,18 +22,24 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
 
 //place API - auto complete
   searchLocation(String locationName) async {
+    // print("search Location started");
+    // print(locationName);
     if (locationName.length > 1) {
       String apiPlaceUrl =
           "https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$locationName&key=$googleMapKey&components=country:us";
-
+      // print("API URL: $apiPlaceUrl");
+      // print("api link");
       var responsesFromPlacesApi =
           await CommonMethods.sendRequestToAPI(apiPlaceUrl);
+
+      // print("API Response: $responsesFromPlacesApi"); // Log the response
 
       if (responsesFromPlacesApi == "error") {
         return;
       }
       if (responsesFromPlacesApi["status"] == "OK") {
         var predictionResultInJson = responsesFromPlacesApi["predictions"];
+        print("Predictions");
         var predictionList = (predictionResultInJson as List)
             .map((eachPlacePrediction) =>
                 PredictionModel.fromJson(eachPlacePrediction))
@@ -48,9 +54,14 @@ class _SearchDestinationPageState extends State<SearchDestinationPage> {
 
   @override
   Widget build(BuildContext context) {
-    String userAddress =
-        Provider.of<Appinfo>(context).pickUpLocation!.humanReadableAddress ??
-            "";
+    String userAddress = "";
+    final pickUpLocation = Provider.of<Appinfo>(context).pickUpLocation;
+    if (pickUpLocation != null) {
+      userAddress = pickUpLocation.humanReadableAddress ?? "";
+    } else {
+      print("pickUpLocation is null");
+    }
+
     pickUpTextEditingController.text = userAddress;
 
     return Scaffold(

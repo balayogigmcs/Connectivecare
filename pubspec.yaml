@@ -40,7 +40,7 @@ dependencies:
   firebase_auth: ^5.1.1
   firebase_database: ^11.0.2
   firebase_storage: ^12.1.0
-  google_maps_flutter: ^2.7.0
+  google_maps_flutter: ^2.9.0
   permission_handler: ^11.3.1
   geolocator: ^12.0.0
   http: ^1.2.1
@@ -58,6 +58,15 @@ dependencies:
   flutter_form_builder: ^9.3.0
   cloud_firestore: ^5.1.0
   form_builder_validators: ^11.0.0
+  assets_audio_player: ^3.1.1
+  firebase_messaging: ^15.0.3
+  geoflutterfire_plus: ^0.0.24
+  js: ^0.7.1
+  dio: ^5.6.0
+  stripe_payment: ^1.1.4
+  flutter_stripe_web: ^6.0.0
+  stripe_platform_interface: ^11.0.0
+  shared_preferences: ^2.3.2
   
 
 dev_dependencies:
@@ -69,7 +78,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^3.0.0
+  flutter_lints: ^4.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -90,6 +99,7 @@ flutter:
     - assets/images/final.png
     - assets/images/tracking.png
     - assets/images/
+    - assets/audio/
     - themes/
     - .env
   # assets:
