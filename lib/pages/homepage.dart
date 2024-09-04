@@ -356,13 +356,15 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     /// Restore camera position
     double latitude = prefs.getDouble('cameraLatitude') ?? 0.0;
     double longitude = prefs.getDouble('cameraLongitude') ?? 0.0;
-    CameraPosition cameraPosition = CameraPosition(
-      target: LatLng(latitude, longitude),
-      zoom: 15.0, // You can also save and restore the zoom level if needed
-    );
-    controllerGoogleMap!
-        .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
-
+    if (controllerGoogleMap != null) {
+      print("controllerGoogleMap is not null");
+      CameraPosition cameraPosition = CameraPosition(
+        target: LatLng(latitude, longitude),
+        zoom: 15.0, // You can also save and restore the zoom level if needed
+      );
+      controllerGoogleMap!
+          .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
+    }
     // Restore markers
     List<String>? markerList = prefs.getStringList('markers');
     if (markerList != null) {
@@ -1289,203 +1291,6 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
     });
   }
 
-  // makeTripRequest() {
-  //   print("before tripRequestRef");
-  //   tripRequestRef =
-  //       FirebaseDatabase.instance.ref().child("tripRequests").push();
-  //   print("after tripRequestRef");
-
-  //   print(tripRequestRef);
-  //   print("makeTripRequest");
-  //   print("makeTripRequest");
-
-  //   // // var pickUpLocation
-  //   // var pickUpLocation = this.pickUpLocation;
-  //   // if (pickUpLocation != null) {
-  //   //   print(pickUpLocation.placeName);
-
-  //   //   // Convert Location to AddressModel
-  //   //   AddressModel pickUpAddressModel = AddressModel(
-  //   //     placeName: pickUpLocation.placeName,
-  //   //     latitudePositon: pickUpLocation.latitudePositon,
-  //   //     longitudePosition: pickUpLocation.longitudePosition,
-  //   //     humanReadableAddress:
-  //   //         pickUpLocation.placeName, // You can adjust this as needed
-  //   //     placeId: null, // You can set this to a relevant value if available
-  //   //   );
-
-  //   //   // / Update the Provider with the restored drop-off location
-  //   //   var appInfo = Provider.of<Appinfo>(context, listen: false);
-  //   //   appInfo.updatePickUpLocation(pickUpAddressModel);
-  //   // } else {
-  //   //   print("pickUp location is null");
-  //   // }
-
-  //   // var dropOffDestinationLocation = this.dropOffDestinationLocation;
-  //   // if (dropOffDestinationLocation != null) {
-  //   //   print(dropOffDestinationLocation.placeName);
-
-  //   //   // Convert Location to AddressModel
-  //   //   AddressModel dropOffAddressModel = AddressModel(
-  //   //     placeName: dropOffDestinationLocation.placeName,
-  //   //     latitudePositon: dropOffDestinationLocation.latitudePositon,
-  //   //     longitudePosition: dropOffDestinationLocation.longitudePosition,
-  //   //     humanReadableAddress: dropOffDestinationLocation
-  //   //         .placeName, // You can adjust this as needed
-  //   //     placeId: null, // You can set this to a relevant value if available
-  //   //   );
-
-  //   //   // Update the Provider with the restored drop-off location
-  //   //   var appInfo = Provider.of<Appinfo>(context, listen: false);
-  //   //   appInfo.updateDropOffLocation(dropOffAddressModel);
-  //   // } else {
-  //   //   print("Drop-off location is null");
-  //   // }
-
-  //   var pickUpLocation =
-  //       Provider.of<Appinfo>(context, listen: false).pickUpLocation;
-  //   var dropOffDestinationLocation =
-  //       Provider.of<Appinfo>(context, listen: false).dropOffLocation;
-
-  //   print(pickUpLocation!.placeName);
-  //   print(dropOffDestinationLocation!.placeName);
-
-  //   Map pickUpCoOrdinatesMap = {
-  //     "latitude": pickUpLocation.latitudePositon.toString(),
-  //     "longitude": pickUpLocation.longitudePosition.toString(),
-  //   };
-
-  //   Map dropOffDestinationCoOrdinatesMap = {
-  //     "latitude": dropOffDestinationLocation.latitudePositon.toString(),
-  //     "longitude": dropOffDestinationLocation.longitudePosition.toString(),
-  //   };
-
-  //   print(dropOffDestinationCoOrdinatesMap);
-
-  //   print(tripRequestRef!.key);
-
-  //   // Map driverCoOrdinates = {
-  //   //   "latitude": "",
-  //   //   "longitude": "",
-  //   // };
-
-  //   // print(driverCoOrdinates);
-
-  //   Map dataMap = {
-  //     "tripID": tripRequestRef!.key,
-  //     "publishDateTime": DateTime.now().toString(),
-  //     "userName": userName,
-  //     "userPhone": userPhone,
-  //     "userID": userID,
-  //     "pickUpLatLng": pickUpCoOrdinatesMap,
-  //     "dropOffLatLng": dropOffDestinationCoOrdinatesMap,
-  //     "pickUpAddress": pickUpLocation.placeName,
-  //     "dropOffAddress": dropOffDestinationLocation.placeName,
-  //     "driverID": "waiting",
-  //     "carDetails": "",
-  //     "driverLocation": "",
-  //     "driverName": "",
-  //     "driverPhone": "",
-  //     "driverPhoto": "",
-  //     "fareAmount": "",
-  //     "status": "new",
-  //   };
-  //   print(dataMap);
-
-  //   tripRequestRef!.set(dataMap);
-  //   print("after setting datamap");
-  //   print("status");
-
-  //   try {
-  //     print("Started tripStreamSubscription");
-  //     tripStreamSubscription =
-  //         tripRequestRef!.onValue.listen((eventSnapshot) async {
-  //       if (eventSnapshot.snapshot.value == null) {
-  //         return;
-  //       }
-  //       if ((eventSnapshot.snapshot.value as Map)["driverName"] != null) {
-  //         nameDriver = (eventSnapshot.snapshot.value as Map)["driverName"];
-  //         print(nameDriver);
-  //       }
-  //       if ((eventSnapshot.snapshot.value as Map)["driverPhone"] != null) {
-  //         phoneNumberDriver =
-  //             (eventSnapshot.snapshot.value as Map)["driverPhone"];
-  //       }
-  //       if ((eventSnapshot.snapshot.value as Map)["driverPhoto"] != null) {
-  //         photoDriver = (eventSnapshot.snapshot.value as Map)["driverPhoto"];
-  //       }
-  //       if ((eventSnapshot.snapshot.value as Map)["carDetails"] != null) {
-  //         carDetialsDriver =
-  //             (eventSnapshot.snapshot.value as Map)["carDetails"];
-  //       }
-  //       if ((eventSnapshot.snapshot.value as Map)["status"] != null) {
-  //         status = (eventSnapshot.snapshot.value as Map)["status"];
-  //         print(status);
-  //       }
-  //       if ((eventSnapshot.snapshot.value as Map)["driverLocation"] != null) {
-  //         try {
-  //           double driverLatitude = double.parse((eventSnapshot.snapshot.value
-  //                   as Map)["driverLocation"]["latitude"]
-  //               .toString());
-  //           print(driverLatitude);
-  //           double driverLongitude = double.parse((eventSnapshot.snapshot.value
-  //                   as Map)["driverLocation"]["longitude"]
-  //               .toString());
-  //           print(driverLongitude);
-  //           LatLng driverCurrentLocationLatLng =
-  //               LatLng(driverLatitude, driverLongitude);
-  //           if (status == "accepted") {
-  //             //update info for pickup to user on UI
-  //             //info from driver current location to user pickup location
-  //             updateFromDriverCurrentLocationToPickUp(
-  //                 driverCurrentLocationLatLng);
-  //           } else if (status == "arrived") {
-  //             //update info for arrived - when driver reach at the pickup point of user
-  //             setState(() {
-  //               tripStatusDisplay = 'Driver has Arrived';
-  //             });
-  //           } else if (status == "ontrip") {
-  //             //update info for dropoff to user on UI
-  //             //info from driver current location to user dropoff location
-  //             updateFromDriverCurrentLocationToDropOffDestination(
-  //                 driverCurrentLocationLatLng);
-  //           }
-  //         } on Exception catch (e) {
-  //           print("error : $e");
-  //         }
-  //       } else {
-  //         print("DriverloCation is null");
-  //       }
-  //       if (status == "accepted") {
-  //         displayTripDetailsContainer();
-
-  //         Geofire.stopListener();
-
-  //         //remove drivers markers
-  //         setState(() {
-  //           markerSet.removeWhere(
-  //               (element) => element.markerId.value.contains("driver"));
-  //         });
-  //       }
-
-  //       if (status == "ended") {
-  //         tripRequestRef!.onDisconnect();
-  //         tripRequestRef = null;
-
-  //         tripStreamSubscription!.cancel();
-  //         tripStreamSubscription = null;
-
-  //         resetAppNow();
-
-  //         Navigator.push(context,
-  //             MaterialPageRoute(builder: (BuildContext context) => Homepage()));
-  //       }
-  //     });
-  //   } catch (e) {
-  //     print("Error caused in tripStream");
-  //   }
-  // }
-
   displayTripDetailsContainer() {
     setState(() {
       requestContainerHeight = 0;
@@ -1599,107 +1404,257 @@ class _HomepageState extends State<Homepage> with WidgetsBindingObserver {
         "Driver removed from list. Remaining drivers: ${availableNearbyOnlineDriversList?.length}");
   }
 
-  sendNotificationToDriver(OnlineNearbyDrivers currentDriver) {
-    print("entered into sendNotificationToDriver");
-    print(tripDirectionDetailsInfo);
-    print(currentDriver.uidDriver);
-    print(tripRequestRef);
-    if (tripDirectionDetailsInfo == null ||
-        currentDriver.uidDriver == null ||
-        tripRequestRef == null) {
-      print(
-          "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is null");
-      // sendNotificationToDriver(currentDriver);
-      return;
+  void setupTimerAndListeners(DatabaseReference currentDriverRef, String tripID, BuildContext context) {
+  const oneTickPerSec = Duration(seconds: 1);
+  int localRequestTimeoutDriver = 20;  // local variable to manage timeout
+  Timer? timer;  // Declare a timer
+
+  // Setting up a timer
+  timer = Timer.periodic(oneTickPerSec, (Timer timer) async {
+    localRequestTimeoutDriver -= 1;
+
+    // Stop timer and clean up when the request is cancelled or the timer expires
+    if (stateOfApp != "requesting" || localRequestTimeoutDriver <= 0) {
+      timer.cancel();
+      currentDriverRef.onDisconnect(); // Detach listener to avoid memory leaks
+      currentDriverRef.remove(); // Cleanup data
+
+      if (localRequestTimeoutDriver <= 0) {
+        // Timeout logic, if 20 seconds pass without acceptance
+        await currentDriverRef.set("timeout");
+        searchDriver();  // Proceed to search for another driver
+        print("Timeout: Search for next driver initiated.");
+      }
     }
+  });
 
-    print(
-        "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is not null");
+  // Listening for acceptance
+  currentDriverRef.onValue.listen((DatabaseEvent event) {
+    if (event.snapshot.value.toString() == "accepted") {
+      timer!.cancel();
+      currentDriverRef.onDisconnect();  // Clean up the listener
+      print("Trip accepted by driver.");
+    }
+  });
+}
 
-    // Update driver's newTripStatus - assign tripID to current driver
+void sendNotificationToDriver(OnlineNearbyDrivers currentDriver) async {
+  if (tripDirectionDetailsInfo != null) {
     DatabaseReference currentDriverRef = FirebaseDatabase.instance
         .ref()
         .child("drivers")
         .child(currentDriver.uidDriver.toString())
         .child("newTripStatus");
 
-    currentDriverRef.set(tripRequestRef!.key).then((_) {
-      print("Driver's newTripStatus updated successfully");
-      // Get current driver device recognition token
-      DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
-          .ref()
-          .child("drivers")
-          .child(currentDriver.uidDriver.toString())
-          .child("deviceToken");
-
-      print("tokenOfCurrentDriverRef");
-
-      tokenOfCurrentDriverRef.once().then((dataSnapshot) {
-        if (dataSnapshot.snapshot.value != null) {
-          String deviceToken = dataSnapshot.snapshot.value.toString();
-          print("Device Token: $deviceToken");
-
-          print("Trip ID : ${tripRequestRef!.key.toString()}");
-
-          print("before pushNotification service called");
-          // Send notification
-          PushNotificationService.sendNotificationToSelectedDriver(
-              deviceToken, context, tripRequestRef!.key.toString());
-          print("after pushNotification Service called");
-
-          print("before handleDriverResponseTimeout called");
-          print(currentDriverRef);
-          // Handle the timeout logic and other status updates
-          handleDriverResponseTimeout(currentDriverRef);
-        } else {
-          print("No token found for driver");
-          return;
-        }
-      }).catchError((error) {
-        print("Error fetching device token: $error");
-      });
-    }).catchError((error) {
-      print("Error updating driver's newTripStatus: $error");
+    await currentDriverRef.runTransaction((mutableData) {
+      mutableData  = tripRequestRef!.key; // Assign tripID to current driver safely
+      return Transaction.success(mutableData);
     });
-  }
 
-  void handleDriverResponseTimeout(DatabaseReference currentDriverRef) {
-    print("entered into handleDriverResponseTimeout");
-    const oneTickPerSec = Duration(seconds: 1);
+    DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
+        .ref()
+        .child("drivers")
+        .child(currentDriver.uidDriver.toString())
+        .child("deviceToken");
 
-    Timer.periodic(oneTickPerSec, (timer) {
-      requestTimeoutDriver = requestTimeoutDriver - 1;
-      print(" stateOfApp : $stateOfApp");
+    tokenOfCurrentDriverRef.once().then((dataSnapshot) {
+      if (dataSnapshot.snapshot.value != null) {
+        String deviceToken = dataSnapshot.snapshot.value.toString();
+        // Send notification
+        PushNotificationService.sendNotificationToSelectedDriver(
+            deviceToken, context, tripRequestRef!.key.toString());
+        print("Notification sent to driver.");
 
-      if (stateOfApp != "requesting") {
-        timer.cancel();
-        currentDriverRef.set("cancelled");
-        currentDriverRef.onDisconnect();
-        requestTimeoutDriver = 20;
-        print("Trip request cancelled by user.");
-        return;
-      }
-
-      currentDriverRef.onValue.listen((dataSnapshot) {
-        if (dataSnapshot.snapshot.value.toString() == "accepted") {
-          timer.cancel();
-          currentDriverRef.onDisconnect();
-          requestTimeoutDriver = 20;
-          print("Trip request accepted by driver.");
-        }
-      });
-
-      if (requestTimeoutDriver == 0) {
-        timer.cancel();
-        currentDriverRef.set("timeout");
-        currentDriverRef.onDisconnect();
-        requestTimeoutDriver = 20;
-
-        // Send notification to the next nearest available driver
-        searchDriver();
+        // Setup timer and listeners
+        setupTimerAndListeners(currentDriverRef, tripRequestRef!.key.toString(), context);
+      } else {
+        print("No token found");
       }
     });
+  } else {
+    print("TripDirectionDetailsInfo is null");
   }
+}
+
+
+  // sendNotificationToDriver(OnlineNearbyDrivers currentDriver)async {
+  //   if (tripDirectionDetailsInfo != null) {
+  //     //update driver's newTripStatus - assign tripID to current driver
+  //     DatabaseReference currentDriverRef = FirebaseDatabase.instance
+  //         .ref()
+  //         .child("drivers")
+  //         .child(currentDriver.uidDriver.toString())
+  //         .child("newTripStatus");
+
+  //     print(tripRequestRef);
+  //     print("newTripStatus assigned");
+
+  //     await currentDriverRef.set(tripRequestRef!.key);
+  //     print("tripRequestRef formed");
+
+  //     //get current driver device recognition token
+  //     DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
+  //         .ref()
+  //         .child("drivers")
+  //         .child(currentDriver.uidDriver.toString())
+  //         .child("deviceToken");
+  //     print(tokenOfCurrentDriverRef);
+
+  //     tokenOfCurrentDriverRef.once().then((dataSnapshot) {
+  //       if (dataSnapshot.snapshot.value != null) {
+  //         String deviceToken = dataSnapshot.snapshot.value.toString();
+  //         print("Device Token: $deviceToken");
+
+  //         //send notification
+  //         PushNotificationService.sendNotificationToSelectedDriver(
+  //             deviceToken, context, tripRequestRef!.key.toString());
+  //         print("sendNotification2");
+  //       } else {
+  //         print("no token found");
+  //         return;
+  //       }
+
+  //       const oneTickPerSec = Duration(seconds: 1);
+
+  //       Timer.periodic(oneTickPerSec, (timer) async {
+  //         requestTimeoutDriver = requestTimeoutDriver - 1;
+
+  //         //when trip request is not requesting means trip request cancelled - stop timer
+  //         if (stateOfApp != "requesting") {
+  //           timer.cancel();
+  //           await currentDriverRef.set("cancelled");
+  //           currentDriverRef.onDisconnect();
+  //           requestTimeoutDriver = 20;
+  //           print("sendNotification3");
+  //         }
+
+  //         //when trip request is accepted by online nearest available driver
+  //         currentDriverRef.onValue.listen((dataSnapshot) {
+  //           if (dataSnapshot.snapshot.value.toString() == "accepted") {
+  //             timer.cancel();
+  //             currentDriverRef.onDisconnect();
+  //             requestTimeoutDriver = 20;
+  //             print("sendNotification4");
+  //           }
+  //         });
+
+  //         //if 20 seconds passed - send notification to next nearest online available driver
+  //         if (requestTimeoutDriver == 0) {
+  //           await currentDriverRef.set("timeout");
+  //           timer.cancel();
+  //           currentDriverRef.onDisconnect();
+  //           requestTimeoutDriver = 20;
+  //           print("sendNotification5");
+
+  //           //send notification to next nearest online available driver
+  //           searchDriver();
+  //           print("searchDriver2");
+  //         }
+  //       });
+  //     });
+  //   } else {
+  //     print("tripDirectionDetailsInfo is null");
+  //   }
+  // }
+
+  // sendNotificationToDriver(OnlineNearbyDrivers currentDriver) {
+  //   print("entered into sendNotificationToDriver");
+  //   print(tripDirectionDetailsInfo);
+  //   print(currentDriver.uidDriver);
+  //   print(tripRequestRef);
+  //   if (tripDirectionDetailsInfo == null ||
+  //       currentDriver.uidDriver == null ||
+  //       tripRequestRef == null) {
+  //     print(
+  //         "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is null");
+  //     // sendNotificationToDriver(currentDriver);
+  //     return;
+  //   }
+
+  //   print(
+  //       "tripDirectionDetailsInfo or currentDriver.uidDriver or tripRequestRef is not null");
+
+  //   // Update driver's newTripStatus - assign tripID to current driver
+  //   DatabaseReference currentDriverRef = FirebaseDatabase.instance
+  //       .ref()
+  //       .child("drivers")
+  //       .child(currentDriver.uidDriver.toString())
+  //       .child("newTripStatus");
+
+  //   currentDriverRef.set(tripRequestRef!.key);
+  //     print("Driver's newTripStatus updated successfully");
+  //     // Get current driver device recognition token
+  //     DatabaseReference tokenOfCurrentDriverRef = FirebaseDatabase.instance
+  //         .ref()
+  //         .child("drivers")
+  //         .child(currentDriver.uidDriver.toString())
+  //         .child("deviceToken");
+
+  //     print("tokenOfCurrentDriverRef");
+
+  //     tokenOfCurrentDriverRef.once().then((dataSnapshot) {
+  //       if (dataSnapshot.snapshot.value != null) {
+  //         String deviceToken = dataSnapshot.snapshot.value.toString();
+  //         print("Device Token: $deviceToken");
+
+  //         print("Trip ID : ${tripRequestRef!.key.toString()}");
+
+  //         print("before pushNotification service called");
+  //         // Send notification
+  //         PushNotificationService.sendNotificationToSelectedDriver(
+  //             deviceToken, context, tripRequestRef!.key.toString());
+  //         print("after pushNotification Service called");
+
+  //         print("before handleDriverResponseTimeout called");
+  //         print(currentDriverRef);
+  //         // Handle the timeout logic and other status updates
+  //         handleDriverResponseTimeout(currentDriverRef);
+  //       } else {
+  //         print("No token found for driver");
+  //         return;
+  //       }
+  //     }).catchError((error) {
+  //       print("Error fetching device token: $error");
+  //     });
+  // }
+
+  // void handleDriverResponseTimeout(DatabaseReference currentDriverRef) {
+  //   print("entered into handleDriverResponseTimeout");
+  //   const oneTickPerSec = Duration(seconds: 1);
+
+  //   Timer.periodic(oneTickPerSec, (timer) {
+  //     requestTimeoutDriver = requestTimeoutDriver - 1;
+  //     print(" stateOfApp : $stateOfApp");
+
+  //     if (stateOfApp != "requesting") {
+  //       timer.cancel();
+  //       currentDriverRef.set("cancelled");
+  //       currentDriverRef.onDisconnect();
+  //       requestTimeoutDriver = 20;
+  //       print("Trip request cancelled by user.");
+  //       return;
+  //     }
+
+  //     currentDriverRef.onValue.listen((dataSnapshot) {
+  //       if (dataSnapshot.snapshot.value.toString() == "accepted") {
+  //         timer.cancel();
+  //         currentDriverRef.onDisconnect();
+  //         requestTimeoutDriver = 20;
+  //         print("Trip request accepted by driver.");
+  //       }
+  //     });
+
+  //     if (requestTimeoutDriver == 0) {
+  //       timer.cancel();
+  //       currentDriverRef.set("timeout");
+  //       currentDriverRef.onDisconnect();
+  //       requestTimeoutDriver = 20;
+
+  //       // Send notification to the next nearest available driver
+  //       searchDriver();
+  //     }
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
